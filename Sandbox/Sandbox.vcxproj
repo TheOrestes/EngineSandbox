@@ -15,10 +15,14 @@
     <ClInclude Include="source\Core\SandboxEngine.h" />
     <ClInclude Include="source\Core\Core.h" />
     <ClInclude Include="source\Core\EngineInclude.h" />
+    <ClInclude Include="source\sandboxPCH.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Core\Logger.cpp" />
     <ClCompile Include="source\Core\SandboxEngine.cpp" />
+    <ClCompile Include="source\sandboxPCH.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -69,7 +73,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>BUILD_DLL;_DEBUG;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Sandbox\ThirdParty\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Sandbox\source;$(SolutionDir)Sandbox\ThirdParty\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>sandboxPCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

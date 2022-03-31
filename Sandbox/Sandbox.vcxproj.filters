@@ -27,12 +27,18 @@
     <ClInclude Include="source\Core\Logger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\sandboxPCH.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Core\SandboxEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\Core\Logger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sandboxPCH.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

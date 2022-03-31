@@ -1,4 +1,5 @@
 
+#include "sandboxPCH.h"
 #include "Logger.h"
 
 Logger::Logger()
