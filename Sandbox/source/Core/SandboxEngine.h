@@ -1,12 +1,17 @@
 #pragma once
 
 #include "Core.h"
+#include "GLFW/glfw3.h"
 
-class DLL_API SandboxEngine
+class SandboxEngine
 {
 public:
 	SandboxEngine();
 	virtual ~SandboxEngine();
 	
-	virtual void Run();
+	void Initialize(GLFWwindow* window);
+	void Run(float dt);
+
+private:
+	GLFWwindow* m_pWindow;
 };

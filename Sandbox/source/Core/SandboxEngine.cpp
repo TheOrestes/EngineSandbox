@@ -5,23 +5,27 @@
 //---------------------------------------------------------------------------------------------------------------------
 SandboxEngine::SandboxEngine()
 {
+	m_pWindow = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 SandboxEngine::~SandboxEngine()
 {
+	glfwDestroyWindow(m_pWindow);
+	glfwTerminate();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void SandboxEngine::Run()
+void SandboxEngine::Initialize(GLFWwindow* window)
 {
-	std::cout << "Hello from Sandbox Engine!" << std::endl;
+	m_pWindow = window;
+}   
 
-	LOG_CRITICAL("This is critical");
-	LOG_DEBUG("This is debug");
-
-	while (true)
+//---------------------------------------------------------------------------------------------------------------------
+void SandboxEngine::Run(float dt)
+{
+	while (!glfwWindowShouldClose(m_pWindow))
 	{
-
+		glfwPollEvents();
 	}
 }
