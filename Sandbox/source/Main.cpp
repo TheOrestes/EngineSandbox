@@ -16,19 +16,19 @@ int main(int argc, char** argv)
 
 	GLFWwindow* window = glfwCreateWindow(gWindowWidht, gWindowHeight, "Vulkan Sandbox", nullptr, nullptr);
 
-	glm::vec3 position;
-
 	if (!window)
 	{
-		LOG_CRITICAL("Window creation failed!");
 		glfwTerminate();
-		return EXIT_FAILURE;
+		LOG_ERROR("Window creation failed!");
 	}
 
 	LOG_DEBUG("GLFW Window Created!");
 
 	SandboxEngine MainEngine;
-	MainEngine.Initialize(window);
+	
+	if (!MainEngine.Initialize(window))
+		return EXIT_FAILURE;
+
 	MainEngine.Run(0.016f);
 
 	return EXIT_SUCCESS;

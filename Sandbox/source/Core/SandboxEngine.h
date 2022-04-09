@@ -3,15 +3,18 @@
 #include "Core.h"
 #include "GLFW/glfw3.h"
 
+class VulkanApplication;
+
 class SandboxEngine
 {
 public:
 	SandboxEngine();
 	virtual ~SandboxEngine();
 	
-	void Initialize(GLFWwindow* window);
+	bool Initialize(GLFWwindow* window);
 	void Run(float dt);
 
 private:
-	GLFWwindow* m_pWindow;
+	GLFWwindow*				m_pWindow;
+	VulkanApplication*		m_pVulkanApp;
 };
