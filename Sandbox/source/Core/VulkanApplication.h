@@ -19,6 +19,7 @@ private:
 	VulkanApplication& operator=(const VulkanApplication&);
 
 	bool				CreateInstance();
+	bool				CheckInstanceExtensionSupport(std::vector<const char*> vecExtensions);
 
 private:
 	VkInstance			m_vkInstance;
