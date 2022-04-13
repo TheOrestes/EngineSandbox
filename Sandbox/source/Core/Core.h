@@ -3,12 +3,7 @@
 #include "Logger.h"
 
 //---------------------------------------------------------------------------------------------------------------------
-#define LOG_CRITICAL(...)												\
-{																		\
-	Logger::getInstance().GetSandboxLogger()->critical(__VA_ARGS__);	\
-	return std::runtime_error("Critical Error, see message above!");	\
-}																		\
-
+#define LOG_CRITICAL(...)	Logger::getInstance().GetSandboxLogger()->critical(__VA_ARGS__);
 #define LOG_ERROR(...)		Logger::getInstance().GetSandboxLogger()->error(__VA_ARGS__);		
 #define LOG_WARNING(...)	Logger::getInstance().GetSandboxLogger()->warn(__VA_ARGS__);
 #define LOG_INFO(...)		Logger::getInstance().GetSandboxLogger()->info(__VA_ARGS__);

@@ -1,16 +1,19 @@
 #include "sandboxPCH.h"
 #include "VulkanApplication.h"
+#include "Renderer/VulkanDevice.h"
 #include "Core.h"
 #include "GLFW/glfw3.h"
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanApplication::VulkanApplication()
 {
+	
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanApplication::~VulkanApplication()
 {
+	SAFE_DELETE(m_pVulkanDevice);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -19,6 +22,9 @@ bool VulkanApplication::Initialize(void* pWindow)
 	GLFWwindow* window = reinterpret_cast<GLFWwindow*>(pWindow);
 
 	CHECK(CreateInstance());
+
+	m_pVulkanDevice = new VulkanDevice(m_vkInstance, nullptr);
+	CHECK(m_pVulkanDevice->AcquirePhysicalDevice());
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -79,9 +85,6 @@ bool VulkanApplication::CreateInstance()
 	VK_CHECK(vkCreateInstance(&instCreateInfo, nullptr, &m_vkInstance));
 
 	LOG_DEBUG("Vulkan Instance created!");
-	
-	//std::array<std::string, 2> arrInstanceExtensions = { "VK_KHR_Surface", "VK_KHR_win32_surface" };
-	//std::array<std::string, 1> arrEnabledExtensions = { "VK_LAYER_KHRONOS_validation" };
 
 	return true;
 }

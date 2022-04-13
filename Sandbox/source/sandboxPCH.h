@@ -3,6 +3,7 @@
 #include <utility>
 #include <algorithm>
 #include <functional>
+#include <optional>
 
 #include <sstream>
 #include <fstream>

@@ -3,6 +3,8 @@
 #include "IApplication.h"
 #include "vulkan/vulkan.hpp"
 
+class VulkanDevice;
+
 class VulkanApplication : public IApplication
 {
 public:
@@ -24,5 +26,6 @@ private:
 private:
 	VkInstance			m_vkInstance;
 
+	VulkanDevice*		m_pVulkanDevice;
 };
 
