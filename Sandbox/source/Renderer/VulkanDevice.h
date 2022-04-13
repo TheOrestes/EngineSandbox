@@ -27,6 +27,8 @@ public:
 	bool								AcquirePhysicalDevice();
 	bool								CreateLogicalDevice();
 
+	void								Destroy();
+
 private:
 	void								FetchQueueFamilies(VkPhysicalDevice physicalDevice);
 	bool								CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
@@ -44,5 +46,7 @@ private:
 	VkSurfaceKHR						m_vkSurfaceKHR;
 
 	QueueFamilyIndices					m_QueueFamilyIndices;
+
+	VkQueue								m_vkQueueGraphics;
 };
 

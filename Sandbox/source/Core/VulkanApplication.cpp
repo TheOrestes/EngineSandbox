@@ -25,6 +25,7 @@ bool VulkanApplication::Initialize(void* pWindow)
 
 	m_pVulkanDevice = new VulkanDevice(m_vkInstance, nullptr);
 	CHECK(m_pVulkanDevice->AcquirePhysicalDevice());
+	CHECK(m_pVulkanDevice->CreateLogicalDevice());
 }
 
 //---------------------------------------------------------------------------------------------------------------------

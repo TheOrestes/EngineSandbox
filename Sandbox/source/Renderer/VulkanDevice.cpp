@@ -87,7 +87,41 @@ bool VulkanDevice::AcquirePhysicalDevice()
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanDevice::CreateLogicalDevice()
 {
+	// Queue the logical device needs to create & the info to do so!
+	VkDeviceQueueCreateInfo queueCreateInfo = {};
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
+	queueCreateInfo.queueCount = 1;
+	float priority = 1.0f;
+	queueCreateInfo.pQueuePriorities = &priority;
+	
+	// Information needed to create logical device!
+	VkDeviceCreateInfo deviceCreateInfo = {};
+	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.queueCreateInfoCount = 1;
+	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+	deviceCreateInfo.enabledExtensionCount = 0;
+	deviceCreateInfo.ppEnabledExtensionNames = nullptr;
+	
+	// Physical device features that logical device will use...
+	VkPhysicalDeviceFeatures deviceFeatures = {};
+	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+
+	// Create logical device from the given physical device...
+	VK_CHECK(vkCreateDevice(m_vkPhysicalDevice, &deviceCreateInfo, nullptr, &m_vkLogicalDevice));
+
+	LOG_DEBUG("Vulkan Logical device created!");
+
+	// Queues are created at the same time as device creation, store their handle!
+	vkGetDeviceQueue(m_vkLogicalDevice, m_QueueFamilyIndices.graphicsFamily.value(), 0, &m_vkQueueGraphics);
+
 	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void VulkanDevice::Destroy()
+{
+	vkDestroyDevice(m_vkLogicalDevice, nullptr);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
