@@ -85,6 +85,8 @@ bool VulkanDevice::AcquirePhysicalDevice()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+// Create logical device supporting required Queues, Extensions & Device features!
+
 bool VulkanDevice::CreateLogicalDevice()
 {
 	// Queue the logical device needs to create & the info to do so!
