@@ -36,6 +36,9 @@
     <ClInclude Include="source\Renderer\VulkanDevice.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\Renderer\Utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Core\SandboxEngine.cpp">

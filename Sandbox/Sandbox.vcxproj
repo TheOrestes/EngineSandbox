@@ -15,6 +15,7 @@
     <ClInclude Include="source\Core\Logger.h" />
     <ClInclude Include="source\Core\SandboxEngine.h" />
     <ClInclude Include="source\Core\Core.h" />
+    <ClInclude Include="source\Renderer\Utility.h" />
     <ClInclude Include="source\sandboxPCH.h" />
     <ClInclude Include="source\Core\VulkanApplication.h" />
     <ClInclude Include="source\Renderer\VulkanDevice.h" />

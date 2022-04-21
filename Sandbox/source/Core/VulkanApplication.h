@@ -1,7 +1,8 @@
 #pragma once
 
 #include "IApplication.h"
-#include "vulkan/vulkan.hpp"
+#include "vulkan/vulkan.h"
+#include "Core.h"
 
 class VulkanDevice;
 
@@ -11,21 +12,51 @@ public:
 	VulkanApplication();
 	~VulkanApplication();
 
-	virtual bool		Initialize(void* pWindow) override;
-	virtual void		Update(float dt) override;
-	virtual void		Render() override;
-	virtual void		Destroy() override;
+	virtual bool				Initialize(void* pWindow) override;
+	virtual void				Update(float dt) override;
+	virtual void				Render() override;
+	virtual void				Destroy() override;
 
 private:
 	VulkanApplication(const VulkanApplication&);
 	VulkanApplication& operator=(const VulkanApplication&);
 
-	bool				CreateInstance();
-	bool				CheckInstanceExtensionSupport(std::vector<const char*> vecExtensions);
+	bool						CreateInstance();
+	bool						CheckInstanceExtensionSupport(const std::vector<const char*>& instanceExtensions);
+	bool						CheckValidationLayerSupport();
+	bool						SetupDebugMessenger();
+	void						PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 private:
-	VkInstance			m_vkInstance;
+	VkInstance					m_vkInstance;
+	VulkanDevice*				m_pVulkanDevice;
+	VkDebugUtilsMessengerEXT	m_vkDebugMessenger;
 
-	VulkanDevice*		m_pVulkanDevice;
+	//-----------------------------------------------------------------------------------------------------------------
+	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT msgSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT msgType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData)
+	{
+		LOG_ERROR("----------------------------------------------------------------------------------------------------");
+		if (msgSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+		{
+			LOG_DEBUG("Validation Layer: {0}", pCallbackData->pMessage);
+		}
+		else if (msgSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+		{
+			LOG_WARNING("Validation Layer: {0}", pCallbackData->pMessage);
+		}
+		else if (msgSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+		{
+			LOG_INFO("Validation Layer: {0}", pCallbackData->pMessage);
+		}
+		else if (msgSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+		{
+			LOG_CRITICAL("Validation Layer: {0}", pCallbackData->pMessage);
+		}
+
+		return VK_FALSE;
+	}
 };
 

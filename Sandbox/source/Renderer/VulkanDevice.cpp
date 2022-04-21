@@ -107,6 +107,8 @@ bool VulkanDevice::CreateLogicalDevice()
 	
 	// Physical device features that logical device will use...
 	VkPhysicalDeviceFeatures deviceFeatures = {};
+	vkGetPhysicalDeviceFeatures(m_vkPhysicalDevice, &deviceFeatures);
+
 	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
 	// Create logical device from the given physical device...
@@ -123,7 +125,7 @@ bool VulkanDevice::CreateLogicalDevice()
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanDevice::Destroy()
 {
-	vkDestroyDevice(m_vkLogicalDevice, nullptr);
+	//vkDestroyDevice(m_vkLogicalDevice, nullptr);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
