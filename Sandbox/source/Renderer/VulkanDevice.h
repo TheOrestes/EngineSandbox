@@ -14,7 +14,7 @@ struct QueueFamilyIndices
 	std::optional<uint32_t> graphicsFamily;
 	std::optional<uint32_t> presentFamily;
 
-	bool isComplete() { return graphicsFamily.has_value(); /*&& presentFamily.has_value()*/ }
+	bool isComplete() { return graphicsFamily.has_value() && presentFamily.has_value(); }
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -48,5 +48,6 @@ private:
 	QueueFamilyIndices					m_QueueFamilyIndices;
 
 	VkQueue								m_vkQueueGraphics;
+	VkQueue								m_vkQueuePresent;
 };
 

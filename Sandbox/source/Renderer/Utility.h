@@ -15,12 +15,11 @@ namespace Helper
 
 	namespace Vulkan
 	{
-	//-----------------------------------------------------------------------------------------------------------------------
-	//--- list of validation layers...
+		//--- list of validation layers...
 		const std::vector<const char*> g_strValidationLayers =
 		{
 			"VK_LAYER_KHRONOS_validation"
-	};
+		};
 
 #ifdef _DEBUG
 		const bool g_bEnableValidationLayer = true;
@@ -28,6 +27,11 @@ namespace Helper
 		const bool g_bEnableValidationLayer = false;
 #endif // _DEBUG
 
+		//--- list of device extensions
+		const std::vector<const char*> g_strDeviceExtensions =
+		{
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+		};
 	}
 }
 

@@ -19,8 +19,10 @@ struct RenderContext
 		SAFE_DELETE(pVulkanDevice);
 	}
 
+	VkInstance		vkInst;
 	GLFWwindow*		pWindow;
 	VulkanDevice*	pVulkanDevice;
+	VkSurfaceKHR	vkSurface;
 };
 
 class VulkanRenderer

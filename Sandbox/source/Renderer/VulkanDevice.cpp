@@ -1,6 +1,7 @@
 #include "sandboxPCH.h"
 #include "Core/Core.h"
 #include "VulkanDevice.h"
+#include "Utility.h"
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanDevice::VulkanDevice(VkInstance instance, VkSurfaceKHR surface)
@@ -96,21 +97,37 @@ bool VulkanDevice::AcquirePhysicalDevice()
 
 bool VulkanDevice::CreateLogicalDevice()
 {
-	// Queue the logical device needs to create & the info to do so!
-	VkDeviceQueueCreateInfo queueCreateInfo = {};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
-	queueCreateInfo.queueCount = 1;
-	float priority = 1.0f;
-	queueCreateInfo.pQueuePriorities = &priority;
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
+
+	// std::set allows only One unique value for input values, no duplicate is allowed, so if both Graphics Queue family
+	// and Presentation Queue family index is same then it will avoid the duplicates and assign only one queue index!
+	std::set<uint32_t> uniqueQueueFamilies =
+	{
+		m_QueueFamilyIndices.graphicsFamily.value(),
+		m_QueueFamilyIndices.presentFamily.value()
+	};
+
+	float queuePriority = 1.0f;
+
+	for (uint32_t queueFamily = 0; queueFamily < uniqueQueueFamilies.size(); ++queueFamily)
+	{
+		// Queue the logical device needs to create & the info to do so!
+		VkDeviceQueueCreateInfo queueCreateInfo = {};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = queueFamily;
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
 	
 	// Information needed to create logical device!
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.queueCreateInfoCount = 1;
-	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
-	deviceCreateInfo.enabledExtensionCount = 0;
-	deviceCreateInfo.ppEnabledExtensionNames = nullptr;
+	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(Helper::Vulkan::g_strDeviceExtensions.size());
+	deviceCreateInfo.ppEnabledExtensionNames = Helper::Vulkan::g_strDeviceExtensions.data();
 	
 	// Physical device features that logical device will use...
 	VkPhysicalDeviceFeatures deviceFeatures = {};
@@ -125,6 +142,7 @@ bool VulkanDevice::CreateLogicalDevice()
 
 	// Queues are created at the same time as device creation, store their handle!
 	vkGetDeviceQueue(m_vkLogicalDevice, m_QueueFamilyIndices.graphicsFamily.value(), 0, &m_vkQueueGraphics);
+	vkGetDeviceQueue(m_vkLogicalDevice, m_QueueFamilyIndices.presentFamily.value(), 0, &m_vkQueuePresent);
 
 	return true;
 }
@@ -156,14 +174,14 @@ void VulkanDevice::FetchQueueFamilies(VkPhysicalDevice physicalDevice)
 		}
 
 		// check if this queue family has capability of presenting to our window surface!
-		//VkBool32 bPresentSupport = false;
-		//vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_vkSurfaceKHR, &bPresentSupport);
-		//
-		//// if yes, store presentation family queue index!
-		//if (bPresentSupport)
-		//{
-		//	m_QueueFamilyIndices.presentFamily = i;
-		//}
+		VkBool32 bPresentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_vkSurfaceKHR, &bPresentSupport);
+
+		// if yes, store presentation family queue index!
+		if (bPresentSupport)
+		{
+			m_QueueFamilyIndices.presentFamily = i;
+		}
 
 		if (m_QueueFamilyIndices.isComplete())
 			break;
@@ -171,7 +189,41 @@ void VulkanDevice::FetchQueueFamilies(VkPhysicalDevice physicalDevice)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
+bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 {
+	// Get count of total number of extensions
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+	// gather their information
+	m_vecSupportedExtensions.resize(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, m_vecSupportedExtensions.data());
+
+	// Compare Required extensions with supported extensions...
+	for (int i = 0; i < Helper::Vulkan::g_strDeviceExtensions.size(); ++i)
+	{
+		bool bExtensionFound = false;
+
+		for (int j = 0; j < extensionCount; ++j)
+		{
+			// If device supported extensions matches the one we want, good news ... Enumarate them!
+			if (strcmp(Helper::Vulkan::g_strDeviceExtensions[i], m_vecSupportedExtensions[j].extensionName) == 0)
+			{
+				bExtensionFound = true;
+
+				std::string msg = std::string(Helper::Vulkan::g_strDeviceExtensions[i]) + " device extension found!";
+				LOG_DEBUG(msg.c_str());
+
+				break;
+			}
+		}
+
+		// No matching extension found ... bail out!
+		if (!bExtensionFound)
+		{
+			return false;
+		}
+	}
+
 	return true;
 }
