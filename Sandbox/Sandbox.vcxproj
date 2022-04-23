@@ -19,6 +19,7 @@
     <ClInclude Include="source\sandboxPCH.h" />
     <ClInclude Include="source\Core\VulkanApplication.h" />
     <ClInclude Include="source\Renderer\VulkanDevice.h" />
+    <ClInclude Include="source\Renderer\VulkanRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Core\Logger.cpp" />
@@ -29,6 +30,7 @@
     </ClCompile>
     <ClCompile Include="source\Core\VulkanApplication.cpp" />
     <ClCompile Include="source\Renderer\VulkanDevice.cpp" />
+    <ClCompile Include="source\Renderer\VulkanRenderer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

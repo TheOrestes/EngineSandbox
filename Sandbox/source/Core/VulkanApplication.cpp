@@ -1,44 +1,45 @@
 #include "sandboxPCH.h"
 #include "VulkanApplication.h"
-#include "Renderer/VulkanDevice.h"
+#include "Renderer/VulkanRenderer.h"
 #include "Renderer/Utility.h"
 #include "GLFW/glfw3.h"
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanApplication::VulkanApplication()
 {
-	m_pVulkanDevice = nullptr;
 	m_vkDebugMessenger = VK_NULL_HANDLE;
 	m_vkInstance = VK_NULL_HANDLE;
+	m_pVulkanRenderer = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanApplication::~VulkanApplication()
 {
-	SAFE_DELETE(m_pVulkanDevice);
+	SAFE_DELETE(m_pVulkanRenderer);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanApplication::Initialize(void* pWindow)
 {
-	GLFWwindow* window = reinterpret_cast<GLFWwindow*>(pWindow);
+	m_pWindow = reinterpret_cast<GLFWwindow*>(pWindow);
 
 	CHECK(CreateInstance());
 	CHECK(SetupDebugMessenger());
 
-	m_pVulkanDevice = new VulkanDevice(m_vkInstance, nullptr);
-	CHECK(m_pVulkanDevice->AcquirePhysicalDevice());
-	CHECK(m_pVulkanDevice->CreateLogicalDevice());
+	m_pVulkanRenderer = new VulkanRenderer();
+	CHECK(m_pVulkanRenderer->Initialize(m_pWindow, m_vkInstance));
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanApplication::Update(float dt)
 {
+	m_pVulkanRenderer->Update(dt);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanApplication::Render()
 {
+	m_pVulkanRenderer->Render();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -46,7 +47,7 @@ void VulkanApplication::Destroy()
 {
 	if (Helper::Vulkan::g_bEnableValidationLayer)
 	{
-		//DestroyDebugUtilsMessengerEXT(m_vkInstance, m_vkDebugMessenger, nullptr);
+		DestroyDebugUtilsMessengerEXT(m_vkInstance, m_vkDebugMessenger, nullptr);
 	}
 
 	vkDestroyInstance(m_vkInstance, nullptr);

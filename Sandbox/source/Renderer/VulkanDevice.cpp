@@ -12,7 +12,14 @@ VulkanDevice::VulkanDevice(VkInstance instance, VkSurfaceKHR surface)
 //---------------------------------------------------------------------------------------------------------------------
 VulkanDevice::~VulkanDevice()
 {
+	
+}
 
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanDevice::SetupDevice()
+{
+	CHECK(AcquirePhysicalDevice());
+	CHECK(CreateLogicalDevice());
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -125,7 +132,7 @@ bool VulkanDevice::CreateLogicalDevice()
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanDevice::Destroy()
 {
-	//vkDestroyDevice(m_vkLogicalDevice, nullptr);
+	vkDestroyDevice(m_vkLogicalDevice, nullptr);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

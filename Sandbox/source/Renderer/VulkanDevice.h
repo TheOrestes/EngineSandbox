@@ -24,12 +24,12 @@ public:
 	VulkanDevice(VkInstance instance, VkSurfaceKHR surface);
 	~VulkanDevice();
 
-	bool								AcquirePhysicalDevice();
-	bool								CreateLogicalDevice();
-
+	bool								SetupDevice();
 	void								Destroy();
 
 private:
+	bool								AcquirePhysicalDevice();
+	bool								CreateLogicalDevice();
 	void								FetchQueueFamilies(VkPhysicalDevice physicalDevice);
 	bool								CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
 

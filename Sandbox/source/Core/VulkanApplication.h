@@ -2,9 +2,10 @@
 
 #include "IApplication.h"
 #include "vulkan/vulkan.h"
+#include "GLFW/glfw3.h"
 #include "Core.h"
 
-class VulkanDevice;
+class VulkanRenderer;
 
 class VulkanApplication : public IApplication
 {
@@ -28,8 +29,9 @@ private:
 	void						PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 private:
+	GLFWwindow*					m_pWindow;
 	VkInstance					m_vkInstance;
-	VulkanDevice*				m_pVulkanDevice;
+	VulkanRenderer*				m_pVulkanRenderer;	
 	VkDebugUtilsMessengerEXT	m_vkDebugMessenger;
 
 	//-----------------------------------------------------------------------------------------------------------------

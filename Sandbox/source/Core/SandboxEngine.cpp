@@ -46,7 +46,8 @@ void SandboxEngine::Run(float dt)
 	{
 		glfwPollEvents();
 
-		
+		m_pVulkanApp->Update(dt);
+		m_pVulkanApp->Render();
 	}
 }
 
