@@ -1,6 +1,9 @@
 #pragma once
 
-#include "vulkan/vulkan.hpp"
+#include "vulkan/vulkan.h"
+
+struct RenderContext;
+class VulkanSwapchain;
 
 //---------------------------------------------------------------------------------------------------------------------
 struct QueueFamilyIndices
@@ -21,10 +24,10 @@ struct QueueFamilyIndices
 class VulkanDevice
 {
 public:
-	VulkanDevice(VkInstance instance, VkSurfaceKHR surface);
+	VulkanDevice(const RenderContext* pRC);
 	~VulkanDevice();
 
-	bool								SetupDevice();
+	bool								SetupDevice(const RenderContext* pRC);
 	void								Destroy();
 
 private:
@@ -34,17 +37,20 @@ private:
 	bool								CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
 
 private:
-	VkPhysicalDevice					m_vkPhysicalDevice;
+	
 	VkPhysicalDeviceProperties			m_vkDeviceProps;
 	VkPhysicalDeviceFeatures			m_vkDeviceFeaturesAvailable;
 	VkPhysicalDeviceFeatures			m_vkDeviceFeaturesEnabled;
 	VkPhysicalDeviceMemoryProperties	m_vkDeviceMemoryProps;
 	std::vector<VkExtensionProperties>	m_vecSupportedExtensions;
 
-	VkDevice							m_vkLogicalDevice;
 	VkInstance							m_vkInstance;
+	
+public:
+	VkPhysicalDevice					m_vkPhysicalDevice;
+	VkDevice							m_vkLogicalDevice;
 	VkSurfaceKHR						m_vkSurfaceKHR;
-
+	VulkanSwapchain*					m_pSwapchain;
 	QueueFamilyIndices					m_QueueFamilyIndices;
 
 	VkQueue								m_vkQueueGraphics;

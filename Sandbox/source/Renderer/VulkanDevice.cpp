@@ -1,13 +1,17 @@
 #include "sandboxPCH.h"
 #include "Core/Core.h"
+#include "VulkanRenderer.h"
+#include "VulkanSwapchain.h"
 #include "VulkanDevice.h"
 #include "Utility.h"
 
 //---------------------------------------------------------------------------------------------------------------------
-VulkanDevice::VulkanDevice(VkInstance instance, VkSurfaceKHR surface)
+VulkanDevice::VulkanDevice(const RenderContext* pRC)
 {
-	m_vkInstance = instance;
-	m_vkSurfaceKHR = surface;
+	m_vkInstance = pRC->vkInst;
+	m_vkSurfaceKHR = pRC->vkSurface;
+
+	m_pSwapchain = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -17,10 +21,11 @@ VulkanDevice::~VulkanDevice()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanDevice::SetupDevice()
+bool VulkanDevice::SetupDevice(const RenderContext* pRC)
 {
 	CHECK(AcquirePhysicalDevice());
 	CHECK(CreateLogicalDevice());
+	CHECK(m_pSwapchain->CreateSwapchain(pRC));
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -48,38 +53,49 @@ bool VulkanDevice::AcquirePhysicalDevice()
 		LOG_INFO("{0} Detected", m_vkDeviceProps.deviceName);
 	}
 
+	m_pSwapchain = new VulkanSwapchain();
+
 	for (uint16_t i = 0; i < deviceCount; ++i)
 	{
-		FetchQueueFamilies(vecDevices[i]);
 		bool bExtensionsSupported = CheckDeviceExtensionSupport(vecDevices[i]);
 
-		if (m_QueueFamilyIndices.isComplete() && bExtensionsSupported)
+		if (bExtensionsSupported)
 		{
-			vkGetPhysicalDeviceProperties(vecDevices[i], &m_vkDeviceProps);
+			// Fetch Queue families supported!
+			FetchQueueFamilies(vecDevices[i]);
 
-			// Prefer Discrete GPU over integrated one!
-			if (m_vkDeviceProps.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+			// Fetch if surface has required parameters to create swapchain!
+			m_pSwapchain->FetchSwapchainInfo(vecDevices[i], m_vkSurfaceKHR);
+
+			if (m_QueueFamilyIndices.isComplete() && m_pSwapchain->isSwapchainValid())
 			{
-				m_vkPhysicalDevice = vecDevices[i];
+				vkGetPhysicalDeviceProperties(vecDevices[i], &m_vkDeviceProps);
 
-				LOG_DEBUG("{0} Selected!!", m_vkDeviceProps.deviceName);
-				LOG_INFO("---------- Device Limits ----------");
-				LOG_INFO("Max Color Attachments: {0}", m_vkDeviceProps.limits.maxColorAttachments);
-				LOG_INFO("Max Descriptor Set Samplers: {0}", m_vkDeviceProps.limits.maxDescriptorSetSamplers);
-				LOG_INFO("Max Descriptor Set Uniform Buffers: {0}", m_vkDeviceProps.limits.maxDescriptorSetUniformBuffers);
-				LOG_INFO("Max Framebuffer Height: {0}", m_vkDeviceProps.limits.maxFramebufferHeight);
-				LOG_INFO("Max Framebuffer Width: {0}", m_vkDeviceProps.limits.maxFramebufferWidth);
-				LOG_INFO("Max Push Constant Size: {0}", m_vkDeviceProps.limits.maxPushConstantsSize);
-				LOG_INFO("Max Uniform Buffer Range: {0}", m_vkDeviceProps.limits.maxUniformBufferRange);
-				LOG_INFO("Max Vertex Input Attributes: {0}", m_vkDeviceProps.limits.maxVertexInputAttributes);
+				// Prefer Discrete GPU over integrated one!
+				if (m_vkDeviceProps.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+				{
+					m_vkPhysicalDevice = vecDevices[i];
 
-				break;
-			}
-			else
-			{
-				LOG_ERROR("{0} Rejected!!", m_vkDeviceProps.deviceName);
+					LOG_DEBUG("{0} Selected!!", m_vkDeviceProps.deviceName);
+					LOG_INFO("---------- Device Limits ----------");
+					LOG_INFO("Max Color Attachments: {0}", m_vkDeviceProps.limits.maxColorAttachments);
+					LOG_INFO("Max Descriptor Set Samplers: {0}", m_vkDeviceProps.limits.maxDescriptorSetSamplers);
+					LOG_INFO("Max Descriptor Set Uniform Buffers: {0}", m_vkDeviceProps.limits.maxDescriptorSetUniformBuffers);
+					LOG_INFO("Max Framebuffer Height: {0}", m_vkDeviceProps.limits.maxFramebufferHeight);
+					LOG_INFO("Max Framebuffer Width: {0}", m_vkDeviceProps.limits.maxFramebufferWidth);
+					LOG_INFO("Max Push Constant Size: {0}", m_vkDeviceProps.limits.maxPushConstantsSize);
+					LOG_INFO("Max Uniform Buffer Range: {0}", m_vkDeviceProps.limits.maxUniformBufferRange);
+					LOG_INFO("Max Vertex Input Attributes: {0}", m_vkDeviceProps.limits.maxVertexInputAttributes);
+
+					break;
+				}
+				else
+				{
+					LOG_ERROR("{0} Rejected!!", m_vkDeviceProps.deviceName);
+				}
 			}
 		}
+		
 	}
 
 	// If we don't find suitable device, return!
@@ -150,6 +166,8 @@ bool VulkanDevice::CreateLogicalDevice()
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanDevice::Destroy()
 {
+	SAFE_DELETE(m_pSwapchain);
+
 	vkDestroyDevice(m_vkLogicalDevice, nullptr);
 }
 
@@ -227,3 +245,4 @@ bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 
 	return true;
 }
+

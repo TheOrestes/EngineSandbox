@@ -32,8 +32,8 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	VK_CHECK(glfwCreateWindowSurface(instance, pWindow, nullptr, &(m_pRC->vkSurface)));
 
 	// Create Vulkan device...
-	m_pRC->pVulkanDevice = new VulkanDevice(instance, m_pRC->vkSurface);
-	CHECK(m_pRC->pVulkanDevice->SetupDevice());
+	m_pRC->pVulkanDevice = new VulkanDevice(m_pRC);
+	CHECK(m_pRC->pVulkanDevice->SetupDevice(m_pRC));
 }
 
 //---------------------------------------------------------------------------------------------------------------------

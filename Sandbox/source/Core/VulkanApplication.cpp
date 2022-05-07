@@ -28,6 +28,8 @@ bool VulkanApplication::Initialize(void* pWindow)
 
 	m_pVulkanRenderer = new VulkanRenderer();
 	CHECK(m_pVulkanRenderer->Initialize(m_pWindow, m_vkInstance));
+
+	return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -45,13 +47,14 @@ void VulkanApplication::Render()
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanApplication::Destroy()
 {
+	m_pVulkanRenderer->Destroy();
+
 	if (Helper::Vulkan::g_bEnableValidationLayer)
 	{
 		DestroyDebugUtilsMessengerEXT(m_vkInstance, m_vkDebugMessenger, nullptr);
 	}
 
 	vkDestroyInstance(m_vkInstance, nullptr);
-
 }
 
 //---------------------------------------------------------------------------------------------------------------------
