@@ -15,9 +15,15 @@ VulkanSwapchain::~VulkanSwapchain()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanSwapchain::Destroy(VulkanDevice* pDevice)
+void VulkanSwapchain::Destroy(const RenderContext* pRC)
 {
-	vkDestroySwapchainKHR(pDevice->m_vkLogicalDevice, m_SwapChain, nullptr);
+	for (SwapchainImage image : m_vecSwapchainImages)
+	{
+		vkDestroyImageView(pRC->pVulkanDevice->m_vkLogicalDevice, image.imageView, nullptr);
+	}
+
+	vkDestroySwapchainKHR(pRC->pVulkanDevice->m_vkLogicalDevice, m_Swapchain, nullptr);
+
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -44,6 +50,7 @@ bool VulkanSwapchain::CreateSwapchain(const RenderContext* pRC)
 	// Swapchain creation info
 	VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	swapchainCreateInfo.surface = pRC->vkSurface;
 	swapchainCreateInfo.imageFormat = surfaceFormat.format;
 	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
 	swapchainCreateInfo.presentMode = presentMode;
@@ -54,7 +61,7 @@ bool VulkanSwapchain::CreateSwapchain(const RenderContext* pRC)
 	swapchainCreateInfo.preTransform = m_SwapchainInfo.surfaceCapabilities.currentTransform;
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapchainCreateInfo.clipped = VK_TRUE;
-	swapchainCreateInfo.surface = pRC->vkSurface;
+	
 
 	if (pRC->pVulkanDevice->m_QueueFamilyIndices.graphicsFamily != pRC->pVulkanDevice->m_QueueFamilyIndices.presentFamily)
 	{
@@ -77,10 +84,35 @@ bool VulkanSwapchain::CreateSwapchain(const RenderContext* pRC)
 
 	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	VK_CHECK(vkCreateSwapchainKHR(pRC->pVulkanDevice->m_vkLogicalDevice, &swapchainCreateInfo, nullptr, &m_SwapChain));
+	VK_CHECK(vkCreateSwapchainKHR(pRC->pVulkanDevice->m_vkLogicalDevice, &swapchainCreateInfo, nullptr, &m_Swapchain));
 
 	LOG_DEBUG("Vulkan Swapchain Created!");
 
+	// Save this for later purposes. 
+	m_SwapchainImageFormat = surfaceFormat.format;
+	m_SwapchainExtent = extent;
+
+	uint32_t swapchainImageCount;
+	vkGetSwapchainImagesKHR(pRC->pVulkanDevice->m_vkLogicalDevice, m_Swapchain, &swapchainImageCount, nullptr);
+
+	std::vector<VkImage> images(swapchainImageCount);
+	vkGetSwapchainImagesKHR(pRC->pVulkanDevice->m_vkLogicalDevice, m_Swapchain, &swapchainImageCount, images.data());
+
+	for (VkImage image : images)
+	{
+		// store image handle
+		SwapchainImage swapchainImage= {};
+		swapchainImage.image = image;
+
+		// Create Image View
+		CreateImageView(pRC, image, m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, &(swapchainImage.imageView));
+
+		// Add to the list...
+		m_vecSwapchainImages.push_back(swapchainImage);
+	}
+
+	LOG_DEBUG("Swapchain Images & Imageviews created");
+		 
 	return true;
 }
 
@@ -94,7 +126,7 @@ void VulkanSwapchain::FetchSwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR s
 
 	// Get the formats
 	uint32_t formatCount = 0;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,nullptr);
 
 	if (formatCount != 0)
 	{
@@ -179,4 +211,28 @@ VkExtent2D VulkanSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& cap
 
 		return actualExtent;
 	}
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanSwapchain::CreateImageView(const RenderContext* pRC, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView* imageView)
+{
+	VkImageViewCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.format = format;
+	createInfo.image = image;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+	createInfo.subresourceRange.aspectMask = aspectFlags;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.levelCount = 1;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+	createInfo.subresourceRange.layerCount = 1;
+
+	VK_CHECK(vkCreateImageView(pRC->pVulkanDevice->m_vkLogicalDevice, &createInfo, nullptr, imageView));
+
+	return true;
 }

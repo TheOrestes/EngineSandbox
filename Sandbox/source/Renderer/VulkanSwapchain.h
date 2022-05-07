@@ -19,13 +19,20 @@ struct SwapchainInfo
 };
 
 //---------------------------------------------------------------------------------------------------------------------
+struct SwapchainImage
+{
+	VkImage		image;
+	VkImageView imageView;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 class VulkanSwapchain
 {
 public:
 	VulkanSwapchain();
 	~VulkanSwapchain();
 
-	void								Destroy(VulkanDevice* pDevice);
+	void								Destroy(const RenderContext* pRC);
 
 	bool								CreateSwapchain(const RenderContext* pRC);
 	void								FetchSwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
@@ -37,10 +44,17 @@ private:
 	VkPresentModeKHR					ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D							ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* pWindow);
 
+	bool								CreateImageView(const RenderContext* pRC, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView* imgView);
+
 private:
 	uint32_t							m_uiImageCount;
 	SwapchainInfo						m_SwapchainInfo;
 
-	VkSwapchainKHR						m_SwapChain;
+	VkSwapchainKHR						m_Swapchain;
+
+public:
+	VkFormat							m_SwapchainImageFormat;
+	VkExtent2D							m_SwapchainExtent;
+	std::vector<SwapchainImage>			m_vecSwapchainImages;
 };
 
