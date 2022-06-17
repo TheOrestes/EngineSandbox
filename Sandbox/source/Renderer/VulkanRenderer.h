@@ -13,20 +13,27 @@ struct RenderContext
 	RenderContext()
 	{
 		pWindow = nullptr;
-		pVulkanDevice = nullptr;
-		vkSurface = VK_NULL_HANDLE;
+		
 		vkInst = VK_NULL_HANDLE;
+		vkSurface = VK_NULL_HANDLE;
+		vkPhysicalDevice = VK_NULL_HANDLE;
+		vkDevice = VK_NULL_HANDLE;
 	}
 
-	~RenderContext()
-	{
-		SAFE_DELETE(pVulkanDevice);
-	}
+	~RenderContext() {}
 
-	VkInstance		vkInst;
-	GLFWwindow* pWindow;
-	VulkanDevice* pVulkanDevice;
-	VkSurfaceKHR	vkSurface;
+	VkInstance			vkInst;
+	GLFWwindow*			pWindow;
+	VkSurfaceKHR		vkSurface;
+	VkPhysicalDevice	vkPhysicalDevice;
+	VkDevice			vkDevice;
+
+	VkSwapchainKHR		vkSwapchain;
+	VkExtent2D			vkSwapchainExtent;
+	VkFormat			vkSwapchainImageFormat;
+
+	VkQueue				vkQueueGraphics;
+	VkQueue				vkQueuePresent;
 };
 
 class VulkanRenderer
@@ -42,5 +49,6 @@ public:
 
 private:
 	RenderContext*						m_pRC;
+	VulkanDevice*						m_pVulkanDevice;
 };
 

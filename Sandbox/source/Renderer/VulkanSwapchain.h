@@ -34,7 +34,7 @@ public:
 
 	void								Destroy(const RenderContext* pRC);
 
-	bool								CreateSwapchain(const RenderContext* pRC);
+	bool								CreateSwapchain(RenderContext* pRC, const QueueFamilyIndices& queueFamilyIndices);
 	void								FetchSwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 	inline bool							isSwapchainValid() const { return m_SwapchainInfo.isValid(); } 
@@ -50,11 +50,7 @@ private:
 	uint32_t							m_uiImageCount;
 	SwapchainInfo						m_SwapchainInfo;
 
-	VkSwapchainKHR						m_Swapchain;
-
 public:
-	VkFormat							m_SwapchainImageFormat;
-	VkExtent2D							m_SwapchainExtent;
 	std::vector<SwapchainImage>			m_vecSwapchainImages;
 };
 

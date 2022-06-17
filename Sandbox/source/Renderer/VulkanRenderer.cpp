@@ -6,19 +6,21 @@
 VulkanRenderer::VulkanRenderer()
 {
 	m_pRC = new RenderContext();
+	m_pVulkanDevice = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanRenderer::~VulkanRenderer()
 {
 	SAFE_DELETE(m_pRC);
+	SAFE_DELETE(m_pVulkanDevice);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::Destroy()
 {
 	vkDestroySurfaceKHR(m_pRC->vkInst, m_pRC->vkSurface, nullptr);
-	m_pRC->pVulkanDevice->Destroy();
+	m_pVulkanDevice->Destroy();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -32,8 +34,8 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	VK_CHECK(glfwCreateWindowSurface(instance, pWindow, nullptr, &(m_pRC->vkSurface)));
 
 	// Create Vulkan device...
-	m_pRC->pVulkanDevice = new VulkanDevice(m_pRC);
-	CHECK(m_pRC->pVulkanDevice->SetupDevice(m_pRC));
+	m_pVulkanDevice = new VulkanDevice(m_pRC);
+	CHECK(m_pVulkanDevice->SetupDevice(m_pRC));
 }
 
 //---------------------------------------------------------------------------------------------------------------------

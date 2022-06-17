@@ -27,13 +27,13 @@ public:
 	VulkanDevice(const RenderContext* pRC);
 	~VulkanDevice();
 
-	bool								SetupDevice(const RenderContext* pRC);
+	bool								SetupDevice(RenderContext* pRC);
 	void								Destroy();
 
 private:
-	bool								AcquirePhysicalDevice();
-	bool								CreateLogicalDevice();
-	void								FetchQueueFamilies(VkPhysicalDevice physicalDevice);
+	bool								AcquirePhysicalDevice(RenderContext* pRC);
+	bool								CreateLogicalDevice(RenderContext* pRC);
+	void								FetchQueueFamilies(VkPhysicalDevice physicalDevice, const RenderContext* pRC);
 	bool								CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
 
 private:
@@ -43,17 +43,9 @@ private:
 	VkPhysicalDeviceFeatures			m_vkDeviceFeaturesEnabled;
 	VkPhysicalDeviceMemoryProperties	m_vkDeviceMemoryProps;
 	std::vector<VkExtensionProperties>	m_vecSupportedExtensions;
-
-	VkInstance							m_vkInstance;
 	
 public:
-	VkPhysicalDevice					m_vkPhysicalDevice;
-	VkDevice							m_vkLogicalDevice;
-	VkSurfaceKHR						m_vkSurfaceKHR;
 	VulkanSwapchain*					m_pSwapchain;
 	QueueFamilyIndices					m_QueueFamilyIndices;
-
-	VkQueue								m_vkQueueGraphics;
-	VkQueue								m_vkQueuePresent;
 };
 

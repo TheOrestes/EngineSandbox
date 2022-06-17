@@ -19,15 +19,12 @@ void VulkanSwapchain::Destroy(const RenderContext* pRC)
 {
 	for (SwapchainImage image : m_vecSwapchainImages)
 	{
-		vkDestroyImageView(pRC->pVulkanDevice->m_vkLogicalDevice, image.imageView, nullptr);
+		vkDestroyImageView(pRC->vkDevice, image.imageView, nullptr);
 	}
-
-	vkDestroySwapchainKHR(pRC->pVulkanDevice->m_vkLogicalDevice, m_Swapchain, nullptr);
-
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanSwapchain::CreateSwapchain(const RenderContext* pRC)
+bool VulkanSwapchain::CreateSwapchain(RenderContext* pRC, const QueueFamilyIndices& queueFamilyIndices)
 {
 	// 1. Choose best surface format
 	VkSurfaceFormatKHR surfaceFormat = ChooseBestSurfaceFormat(m_SwapchainInfo.surfaceFormats);
@@ -63,17 +60,17 @@ bool VulkanSwapchain::CreateSwapchain(const RenderContext* pRC)
 	swapchainCreateInfo.clipped = VK_TRUE;
 	
 
-	if (pRC->pVulkanDevice->m_QueueFamilyIndices.graphicsFamily != pRC->pVulkanDevice->m_QueueFamilyIndices.presentFamily)
+	if (queueFamilyIndices.graphicsFamily != queueFamilyIndices.presentFamily)
 	{
-		uint32_t queueFamilyIndices[] =
+		uint32_t indices[] =
 		{
-			pRC->pVulkanDevice->m_QueueFamilyIndices.graphicsFamily.value(),
-			pRC->pVulkanDevice->m_QueueFamilyIndices.presentFamily.value()
+			queueFamilyIndices.graphicsFamily.value(),
+			queueFamilyIndices.presentFamily.value()
 		};
 
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		swapchainCreateInfo.queueFamilyIndexCount = 2;
-		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+		swapchainCreateInfo.pQueueFamilyIndices = indices;
 	}
 	else
 	{
@@ -84,19 +81,19 @@ bool VulkanSwapchain::CreateSwapchain(const RenderContext* pRC)
 
 	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	VK_CHECK(vkCreateSwapchainKHR(pRC->pVulkanDevice->m_vkLogicalDevice, &swapchainCreateInfo, nullptr, &m_Swapchain));
+	VK_CHECK(vkCreateSwapchainKHR(pRC->vkDevice, &swapchainCreateInfo, nullptr, &(pRC->vkSwapchain)));
 
 	LOG_DEBUG("Vulkan Swapchain Created!");
 
 	// Save this for later purposes. 
-	m_SwapchainImageFormat = surfaceFormat.format;
-	m_SwapchainExtent = extent;
+	pRC->vkSwapchainImageFormat = surfaceFormat.format;
+	pRC->vkSwapchainExtent = extent;
 
 	uint32_t swapchainImageCount;
-	vkGetSwapchainImagesKHR(pRC->pVulkanDevice->m_vkLogicalDevice, m_Swapchain, &swapchainImageCount, nullptr);
+	vkGetSwapchainImagesKHR(pRC->vkDevice, pRC->vkSwapchain, &swapchainImageCount, nullptr);
 
 	std::vector<VkImage> images(swapchainImageCount);
-	vkGetSwapchainImagesKHR(pRC->pVulkanDevice->m_vkLogicalDevice, m_Swapchain, &swapchainImageCount, images.data());
+	vkGetSwapchainImagesKHR(pRC->vkDevice, pRC->vkSwapchain, &swapchainImageCount, images.data());
 
 	for (VkImage image : images)
 	{
@@ -105,7 +102,7 @@ bool VulkanSwapchain::CreateSwapchain(const RenderContext* pRC)
 		swapchainImage.image = image;
 
 		// Create Image View
-		CreateImageView(pRC, image, m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, &(swapchainImage.imageView));
+		CreateImageView(pRC, image, pRC->vkSwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, &(swapchainImage.imageView));
 
 		// Add to the list...
 		m_vecSwapchainImages.push_back(swapchainImage);
@@ -232,7 +229,7 @@ bool VulkanSwapchain::CreateImageView(const RenderContext* pRC, VkImage image, V
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 
-	VK_CHECK(vkCreateImageView(pRC->pVulkanDevice->m_vkLogicalDevice, &createInfo, nullptr, imageView));
+	VK_CHECK(vkCreateImageView(pRC->vkDevice, &createInfo, nullptr, imageView));
 
 	return true;
 }

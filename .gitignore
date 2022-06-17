@@ -35,3 +35,8 @@
 .vs/
 bin/
 bin-int/
+
+# Compiler Score files
+*.scor
+*.incl
+*.t0000
