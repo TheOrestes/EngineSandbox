@@ -10,7 +10,9 @@ namespace Helper
 {
 	namespace App
 	{
-
+		const std::string gShaderCompilerPath = "C:/VulkanSDK/1.3.204.1/Bin/glslc.exe";
+		const uint16_t gWindowWidht = 960;
+		const uint16_t gWindowHeight = 540;
 	}
 
 	namespace Vulkan

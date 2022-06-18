@@ -25,6 +25,7 @@ bool VulkanApplication::Initialize(void* pWindow)
 
 	CHECK(CreateInstance());
 	CHECK(SetupDebugMessenger());
+	CHECK(RunShaderCompiler("Assets/Shaders"));
 
 	m_pVulkanRenderer = new VulkanRenderer();
 	CHECK(m_pVulkanRenderer->Initialize(m_pWindow, m_vkInstance));
@@ -133,6 +134,34 @@ bool VulkanApplication::SetupDebugMessenger()
 	VK_CHECK(CreateDebugUtilsMessengerEXT(m_vkInstance, &createInfo, nullptr, &m_vkDebugMessenger));
 
 	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanApplication::RunShaderCompiler(const std::string& directoryPath)
+{
+	// First check if shader compiler exists at the path mentioned?
+	std::filesystem::path compilerPath(Helper::App::gShaderCompilerPath);
+
+	if (std::filesystem::exists(compilerPath))
+	{
+		for (const auto& entry : std::filesystem::directory_iterator(directoryPath))
+		{
+			if (entry.is_regular_file() &&
+				(entry.path().extension().string() == ".vert" || entry.path().extension().string() == ".frag"))
+			{
+				std::string cmd = Helper::App::gShaderCompilerPath + " --target-env=vulkan1.2" + " -c" + " " + entry.path().string() + " -o " + entry.path().string() + ".spv";
+				LOG_DEBUG("Compiling shader " + entry.path().filename().string());
+				std::system(cmd.c_str());
+			}
+		}
+
+		return true;
+	}
+	else
+	{
+		LOG_ERROR("Shader compiler not found!!!");
+		return false;
+	}
 }
 
 //---------------------------------------------------------------------------------------------------------------------

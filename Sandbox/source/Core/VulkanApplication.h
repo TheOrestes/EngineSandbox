@@ -26,6 +26,7 @@ private:
 	bool						CheckInstanceExtensionSupport(const std::vector<const char*>& instanceExtensions);
 	bool						CheckValidationLayerSupport();
 	bool						SetupDebugMessenger();
+	bool						RunShaderCompiler(const std::string& directoryPath);
 	void						PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 private:
