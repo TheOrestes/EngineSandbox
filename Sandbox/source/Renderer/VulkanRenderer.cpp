@@ -26,7 +26,6 @@ void VulkanRenderer::Destroy()
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 {
-	m_pRC = new RenderContext();
 	m_pRC->vkInst = instance;
 	m_pRC->pWindow = pWindow;
 
@@ -51,7 +50,26 @@ void VulkanRenderer::Render()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+bool VulkanRenderer::CreateGraphicsPipeline(Helper::App::ePipeline pipeline)
+{
+	switch (pipeline)
+	{
+		case Helper::App::FORWARD:
+		{
+			// Read shader code & create modules
+			VkShaderModule vsModule = Helper::Vulkan::CreateShaderModule(m_pRC->vkDevice, "Assets/Shaders/triangle.vert.spv");
+			VkShaderModule fsModule = Helper::Vulkan::CreateShaderModule(m_pRC->vkDevice, "Assets/Shaders/triangle.frag.spv");
 
+
+
+			break;
+		}
+
+		default:
+			break;
+	}
+	return false;
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 

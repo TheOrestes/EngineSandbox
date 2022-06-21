@@ -3,9 +3,6 @@
 #include "sandboxPCH.h"
 #include "Core/Core.h"
 
-#include "Renderer/VulkanDevice.h"
-
-
 namespace Helper
 {
 	namespace App
@@ -13,6 +10,13 @@ namespace Helper
 		const std::string gShaderCompilerPath = "C:/VulkanSDK/1.3.204.1/Bin/glslc.exe";
 		const uint16_t gWindowWidht = 960;
 		const uint16_t gWindowHeight = 540;
+
+		enum ePipeline
+		{
+			FORWARD,
+			DEFERRED,
+			RT
+		};
 	}
 
 	namespace Vulkan
@@ -34,6 +38,45 @@ namespace Helper
 		{
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
 		};
+
+		//-----------------------------------------------------------------------------------------------------------------------
+		//--- Create Shader Module
+		inline VkShaderModule CreateShaderModule(VkDevice device, const std::string& fileName)
+		{
+			// start reading at the end & in binary mode.
+			// Advantage of reading file from the end is we can use read position to determine
+			// size of the file & allocate buffer accordingly!
+			std::ifstream file(fileName, std::ios::ate | std::ios::binary);
+
+			if (!file.is_open())
+				LOG_ERROR("Failed to open Shader file!");
+
+			// get the file size & allocate buffer memory!
+			size_t fileSize = (size_t)file.tellg();
+			std::vector<char> buffer(fileSize);
+
+			// now seek back to the beginning of the file & read all bytes at once!
+			file.seekg(0);
+			file.read(buffer.data(), fileSize);
+
+			// close the file!
+			file.close();
+
+			// Create Shader Module
+			VkShaderModuleCreateInfo shaderModuleInfo;
+			shaderModuleInfo.codeSize = buffer.size();
+			shaderModuleInfo.flags = 0;
+			shaderModuleInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
+			shaderModuleInfo.pNext = nullptr;
+			shaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+
+			VkShaderModule shaderModule;
+			std::string shaderModuleName = fileName;
+
+			vkCreateShaderModule(device, &shaderModuleInfo, nullptr, &shaderModule);
+
+			return shaderModule;
+		}
 	}
 }
 

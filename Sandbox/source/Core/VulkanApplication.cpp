@@ -149,7 +149,7 @@ bool VulkanApplication::RunShaderCompiler(const std::string& directoryPath)
 			if (entry.is_regular_file() &&
 				(entry.path().extension().string() == ".vert" || entry.path().extension().string() == ".frag"))
 			{
-				std::string cmd = Helper::App::gShaderCompilerPath + " --target-env=vulkan1.2" + " -c" + " " + entry.path().string() + " -o " + entry.path().string() + ".spv";
+				std::string cmd = Helper::App::gShaderCompilerPath + " --target-env=vulkan1.3" + " -c" + " " + entry.path().string() + " -o " + entry.path().string() + ".spv";
 				LOG_DEBUG("Compiling shader " + entry.path().filename().string());
 				std::system(cmd.c_str());
 			}

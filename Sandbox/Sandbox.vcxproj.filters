@@ -45,6 +45,9 @@
     <ClInclude Include="source\Renderer\VulkanSwapchain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\Renderer\IRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Core\SandboxEngine.cpp">
