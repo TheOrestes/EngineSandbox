@@ -26,13 +26,15 @@ struct RenderContext
 		vkQueueGraphics = VK_NULL_HANDLE;
 		vkQueuePresent = VK_NULL_HANDLE;
 
-		vkGraphicsPipeline = VK_NULL_HANDLE;
+		vkForwardRenderingPipeline = VK_NULL_HANDLE;
+		vkForwardRenderingPipelineLayout = VK_NULL_HANDLE;
+		vkForwardRenderingRenderPass = VK_NULL_HANDLE;
 	}
 
 	~RenderContext() {}
 
 	VkInstance			vkInst;
-	GLFWwindow* pWindow;
+	GLFWwindow*			pWindow;
 	VkSurfaceKHR		vkSurface;
 	VkPhysicalDevice	vkPhysicalDevice;
 	VkDevice			vkDevice;
@@ -44,7 +46,9 @@ struct RenderContext
 	VkQueue				vkQueueGraphics;
 	VkQueue				vkQueuePresent;
 
-	VkPipeline			vkGraphicsPipeline;
+	VkPipeline			vkForwardRenderingPipeline;
+	VkPipelineLayout	vkForwardRenderingPipelineLayout;
+	VkRenderPass		vkForwardRenderingRenderPass;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -61,6 +65,7 @@ public:
 
 private:
 	bool								CreateGraphicsPipeline(Helper::App::ePipeline pipeline);
+	bool								CreateRenderPass();
 
 private:
 	RenderContext*						m_pRC;
