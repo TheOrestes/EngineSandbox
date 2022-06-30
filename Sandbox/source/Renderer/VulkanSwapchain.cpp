@@ -17,10 +17,13 @@ VulkanSwapchain::~VulkanSwapchain()
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanSwapchain::Destroy(const RenderContext* pRC)
 {
-	for (SwapchainImage image : m_vecSwapchainImages)
+	for (uint32_t i = 0 ; i < m_vecSwapchainImages.size(); i++)
 	{
-		vkDestroyImageView(pRC->vkDevice, image.imageView, nullptr);
+		vkDestroyFramebuffer(pRC->vkDevice, pRC->vkListFramebuffers[i], nullptr);
+		vkDestroyImageView(pRC->vkDevice, m_vecSwapchainImages[i].imageView, nullptr);
 	}
+
+	vkDestroySwapchainKHR(pRC->vkDevice, pRC->vkSwapchain, nullptr);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -110,6 +113,42 @@ bool VulkanSwapchain::CreateSwapchain(RenderContext* pRC, const QueueFamilyIndic
 
 	LOG_DEBUG("Swapchain Images & Imageviews created");
 		 
+	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanSwapchain::CreateFramebuffers(RenderContext* pRC)
+{
+	if (pRC->vkForwardRenderingRenderPass == VK_NULL_HANDLE)
+	{
+		LOG_ERROR("Renderpass not set!!!");
+		return false;
+	}
+
+	pRC->vkListFramebuffers.resize(m_vecSwapchainImages.size());
+
+	// create framebuffer for each swapchain image
+	for (uint32_t i = 0; i < m_vecSwapchainImages.size(); i++)
+	{
+		std::array<VkImageView, 1> attachments =
+		{
+			m_vecSwapchainImages[i].imageView
+		};
+
+		VkFramebufferCreateInfo fbCreateInfo = {};
+		fbCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		fbCreateInfo.renderPass = pRC->vkForwardRenderingRenderPass;
+		fbCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		fbCreateInfo.pAttachments = attachments.data();
+		fbCreateInfo.width = pRC->vkSwapchainExtent.width;
+		fbCreateInfo.height = pRC->vkSwapchainExtent.height;
+		fbCreateInfo.layers = 1;
+
+		VK_CHECK(vkCreateFramebuffer(pRC->vkDevice, &fbCreateInfo, nullptr, &(pRC->vkListFramebuffers[i])));
+	}
+
+	LOG_DEBUG("Framebuffers created...");
+
 	return true;
 }
 

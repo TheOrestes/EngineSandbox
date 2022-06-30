@@ -28,7 +28,8 @@ public:
 	~VulkanDevice();
 
 	bool								SetupDevice(RenderContext* pRC);
-	void								Destroy();
+	bool								SetupFramebuffers(RenderContext* pRC);
+	void								Destroy(RenderContext* pRC);
 
 private:
 	bool								AcquirePhysicalDevice(RenderContext* pRC);

@@ -29,26 +29,49 @@ struct RenderContext
 		vkForwardRenderingPipeline = VK_NULL_HANDLE;
 		vkForwardRenderingPipelineLayout = VK_NULL_HANDLE;
 		vkForwardRenderingRenderPass = VK_NULL_HANDLE;
+
+		vkListFramebuffers.clear();
 	}
 
-	~RenderContext() {}
+	~RenderContext() 
+	{
+		pWindow = nullptr;
 
-	VkInstance			vkInst;
-	GLFWwindow*			pWindow;
-	VkSurfaceKHR		vkSurface;
-	VkPhysicalDevice	vkPhysicalDevice;
-	VkDevice			vkDevice;
+		vkInst = VK_NULL_HANDLE;
+		vkSurface = VK_NULL_HANDLE;
+		vkPhysicalDevice = VK_NULL_HANDLE;
+		vkDevice = VK_NULL_HANDLE;
 
-	VkSwapchainKHR		vkSwapchain;
-	VkExtent2D			vkSwapchainExtent;
-	VkFormat			vkSwapchainImageFormat;
+		vkSwapchain = VK_NULL_HANDLE;
 
-	VkQueue				vkQueueGraphics;
-	VkQueue				vkQueuePresent;
+		vkQueueGraphics = VK_NULL_HANDLE;
+		vkQueuePresent = VK_NULL_HANDLE;
 
-	VkPipeline			vkForwardRenderingPipeline;
-	VkPipelineLayout	vkForwardRenderingPipelineLayout;
-	VkRenderPass		vkForwardRenderingRenderPass;
+		vkForwardRenderingPipeline = VK_NULL_HANDLE;
+		vkForwardRenderingPipelineLayout = VK_NULL_HANDLE;
+		vkForwardRenderingRenderPass = VK_NULL_HANDLE;
+
+		vkListFramebuffers.clear();
+	}
+
+	VkInstance					vkInst;
+	GLFWwindow*					pWindow;
+	VkSurfaceKHR				vkSurface;
+	VkPhysicalDevice			vkPhysicalDevice;
+	VkDevice					vkDevice;
+
+	VkSwapchainKHR				vkSwapchain;
+	VkExtent2D					vkSwapchainExtent;
+	VkFormat					vkSwapchainImageFormat;
+
+	VkQueue						vkQueueGraphics;
+	VkQueue						vkQueuePresent;
+
+	VkPipeline					vkForwardRenderingPipeline;
+	VkPipelineLayout			vkForwardRenderingPipelineLayout;
+	VkRenderPass				vkForwardRenderingRenderPass;
+
+	std::vector<VkFramebuffer>  vkListFramebuffers;
 };
 
 //---------------------------------------------------------------------------------------------------------------------

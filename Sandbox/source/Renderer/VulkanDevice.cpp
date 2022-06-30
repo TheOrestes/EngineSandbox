@@ -14,7 +14,7 @@ VulkanDevice::VulkanDevice(const RenderContext* pRC)
 //---------------------------------------------------------------------------------------------------------------------
 VulkanDevice::~VulkanDevice()
 {
-	
+	SAFE_DELETE(m_pSwapchain);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -23,6 +23,11 @@ bool VulkanDevice::SetupDevice(RenderContext* pRC)
 	CHECK(AcquirePhysicalDevice(pRC));
 	CHECK(CreateLogicalDevice(pRC));
 	CHECK(m_pSwapchain->CreateSwapchain(pRC, m_QueueFamilyIndices));
+}
+
+bool VulkanDevice::SetupFramebuffers(RenderContext* pRC)
+{
+	CHECK(m_pSwapchain->CreateFramebuffers(pRC));
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -161,9 +166,10 @@ bool VulkanDevice::CreateLogicalDevice(RenderContext* pRC)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanDevice::Destroy()
+void VulkanDevice::Destroy(RenderContext* pRC)
 {
-	SAFE_DELETE(m_pSwapchain);
+	m_pSwapchain->Destroy(pRC);
+	vkDestroyDevice(pRC->vkDevice, nullptr);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

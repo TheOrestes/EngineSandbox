@@ -35,6 +35,7 @@ public:
 	void								Destroy(const RenderContext* pRC);
 
 	bool								CreateSwapchain(RenderContext* pRC, const QueueFamilyIndices& queueFamilyIndices);
+	bool								CreateFramebuffers(RenderContext* pRC);
 	void								FetchSwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 	inline bool							isSwapchainValid() const { return m_SwapchainInfo.isValid(); } 

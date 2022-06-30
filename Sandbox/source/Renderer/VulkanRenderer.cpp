@@ -19,8 +19,12 @@ VulkanRenderer::~VulkanRenderer()
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::Destroy()
 {
+	vkDestroyPipeline(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipeline, nullptr);
+	vkDestroyPipelineLayout(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipelineLayout, nullptr);
+	vkDestroyRenderPass(m_pRC->vkDevice, m_pRC->vkForwardRenderingRenderPass, nullptr);
+	
 	vkDestroySurfaceKHR(m_pRC->vkInst, m_pRC->vkSurface, nullptr);
-	m_pVulkanDevice->Destroy();
+	m_pVulkanDevice->Destroy(m_pRC);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -36,6 +40,7 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	m_pVulkanDevice = new VulkanDevice(m_pRC);
 	CHECK(m_pVulkanDevice->SetupDevice(m_pRC));
 	CHECK(CreateRenderPass());
+	CHECK(m_pVulkanDevice->SetupFramebuffers(m_pRC));
 	CHECK(CreateGraphicsPipeline(Helper::App::FORWARD));
 }
 
