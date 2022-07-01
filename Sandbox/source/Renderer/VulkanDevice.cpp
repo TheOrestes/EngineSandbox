@@ -25,9 +25,44 @@ bool VulkanDevice::SetupDevice(RenderContext* pRC)
 	CHECK(m_pSwapchain->CreateSwapchain(pRC, m_QueueFamilyIndices));
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 bool VulkanDevice::SetupFramebuffers(RenderContext* pRC)
 {
 	CHECK(m_pSwapchain->CreateFramebuffers(pRC));
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanDevice::CreateCommandPool(RenderContext* pRC)
+{
+	VkCommandPoolCreateInfo poolInfo = {};
+	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
+	
+	VK_CHECK(vkCreateCommandPool(pRC->vkDevice, &poolInfo, nullptr, &(pRC->vkGraphicsCommandPool)));
+
+	LOG_DEBUG("Graphics Command Pool created!");
+
+	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanDevice::CreateCommandBuffers(RenderContext* pRC)
+{
+	// Make sure we have command buffer for each framebuffer!
+	pRC->vkListGraphicsCommandBuffers.resize(pRC->vkListFramebuffers.size());
+
+	// Allocate buffer from the Graphics command pool
+	VkCommandBufferAllocateInfo cbAllocInfo = {};
+	cbAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cbAllocInfo.commandPool = pRC->vkGraphicsCommandPool;
+	cbAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cbAllocInfo.commandBufferCount = static_cast<uint32_t>(pRC->vkListGraphicsCommandBuffers.size());
+
+	VK_CHECK(vkAllocateCommandBuffers(pRC->vkDevice, &cbAllocInfo, pRC->vkListGraphicsCommandBuffers.data()));
+
+	LOG_DEBUG("Graphics Command buffers created!");
+
+	return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -168,6 +203,7 @@ bool VulkanDevice::CreateLogicalDevice(RenderContext* pRC)
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanDevice::Destroy(RenderContext* pRC)
 {
+	vkDestroyCommandPool(pRC->vkDevice, pRC->vkGraphicsCommandPool, nullptr);
 	m_pSwapchain->Destroy(pRC);
 	vkDestroyDevice(pRC->vkDevice, nullptr);
 }

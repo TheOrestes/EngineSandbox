@@ -40,8 +40,11 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	m_pVulkanDevice = new VulkanDevice(m_pRC);
 	CHECK(m_pVulkanDevice->SetupDevice(m_pRC));
 	CHECK(CreateRenderPass());
-	CHECK(m_pVulkanDevice->SetupFramebuffers(m_pRC));
 	CHECK(CreateGraphicsPipeline(Helper::App::FORWARD));
+	CHECK(m_pVulkanDevice->SetupFramebuffers(m_pRC));
+	CHECK(m_pVulkanDevice->CreateCommandPool(m_pRC));
+	CHECK(m_pVulkanDevice->CreateCommandBuffers(m_pRC));
+	CHECK(RecordCommands());
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -54,6 +57,58 @@ void VulkanRenderer::Update(float dt)
 void VulkanRenderer::Render()
 {
 
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanRenderer::RecordCommands()
+{
+	// Information about how to begin each command buffer
+	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
+	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+	// Information about how to begin the render pass
+	VkRenderPassBeginInfo renderPassBeginInfo = {};
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass = m_pRC->vkForwardRenderingRenderPass;
+	renderPassBeginInfo.renderArea.offset = { 0, 0 };
+	renderPassBeginInfo.renderArea.extent = m_pRC->vkSwapchainExtent;
+
+	std::array<VkClearValue, 1> clearValues =
+	{
+		{0.6f, 0.6f, 0.6f, 1.0f}
+	};
+
+	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassBeginInfo.pClearValues = clearValues.data();
+	
+
+	for(uint32_t i = 0; i < m_pRC->vkListGraphicsCommandBuffers.size(); i++)
+	{
+		renderPassBeginInfo.framebuffer = m_pRC->vkListFramebuffers[i];
+
+		// start recording...
+		VK_CHECK(vkBeginCommandBuffer(m_pRC->vkListGraphicsCommandBuffers[i], &cmdBufferBeginInfo));
+
+		// Begin RenderPass
+		vkCmdBeginRenderPass(m_pRC->vkListGraphicsCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		// Bind pipeline to be used in RenderPass
+		vkCmdBindPipeline(m_pRC->vkListGraphicsCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pRC->vkForwardRenderingPipeline);
+
+		// Execute
+		vkCmdDraw(m_pRC->vkListGraphicsCommandBuffers[i], 3, 1, 0, 0);
+
+		// End RenderPass
+		vkCmdEndRenderPass(m_pRC->vkListGraphicsCommandBuffers[i]);
+
+		// end recording...
+		VK_CHECK(vkEndCommandBuffer(m_pRC->vkListGraphicsCommandBuffers[i]));
+
+		LOG_INFO("Framebuffer{0} command recorded", i);
+	}
+
+	
 }
 
 //---------------------------------------------------------------------------------------------------------------------

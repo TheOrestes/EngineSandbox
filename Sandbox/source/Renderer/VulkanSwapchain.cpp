@@ -147,7 +147,7 @@ bool VulkanSwapchain::CreateFramebuffers(RenderContext* pRC)
 		VK_CHECK(vkCreateFramebuffer(pRC->vkDevice, &fbCreateInfo, nullptr, &(pRC->vkListFramebuffers[i])));
 	}
 
-	LOG_DEBUG("Framebuffers created...");
+	LOG_DEBUG("Framebuffers created!");
 
 	return true;
 }

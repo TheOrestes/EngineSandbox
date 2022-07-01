@@ -29,6 +29,8 @@ public:
 
 	bool								SetupDevice(RenderContext* pRC);
 	bool								SetupFramebuffers(RenderContext* pRC);
+	bool								CreateCommandPool(RenderContext* pRC);
+	bool								CreateCommandBuffers(RenderContext* pRC);
 	void								Destroy(RenderContext* pRC);
 
 private:

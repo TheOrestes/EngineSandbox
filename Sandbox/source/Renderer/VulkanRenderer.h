@@ -54,24 +54,27 @@ struct RenderContext
 		vkListFramebuffers.clear();
 	}
 
-	VkInstance					vkInst;
-	GLFWwindow*					pWindow;
-	VkSurfaceKHR				vkSurface;
-	VkPhysicalDevice			vkPhysicalDevice;
-	VkDevice					vkDevice;
+	VkInstance						vkInst;
+	GLFWwindow*						pWindow;
+	VkSurfaceKHR					vkSurface;
+	VkPhysicalDevice				vkPhysicalDevice;
+	VkDevice						vkDevice;
 
-	VkSwapchainKHR				vkSwapchain;
-	VkExtent2D					vkSwapchainExtent;
-	VkFormat					vkSwapchainImageFormat;
+	VkSwapchainKHR					vkSwapchain;
+	VkExtent2D						vkSwapchainExtent;
+	VkFormat						vkSwapchainImageFormat;
 
-	VkQueue						vkQueueGraphics;
-	VkQueue						vkQueuePresent;
+	VkQueue							vkQueueGraphics;
+	VkQueue							vkQueuePresent;
 
-	VkPipeline					vkForwardRenderingPipeline;
-	VkPipelineLayout			vkForwardRenderingPipelineLayout;
-	VkRenderPass				vkForwardRenderingRenderPass;
+	VkCommandPool					vkGraphicsCommandPool;
+	std::vector<VkCommandBuffer>	vkListGraphicsCommandBuffers;
 
-	std::vector<VkFramebuffer>  vkListFramebuffers;
+	VkPipeline						vkForwardRenderingPipeline;
+	VkPipelineLayout				vkForwardRenderingPipelineLayout;
+	VkRenderPass					vkForwardRenderingRenderPass;
+
+	std::vector<VkFramebuffer>		vkListFramebuffers;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -84,6 +87,7 @@ public:
 	bool								Initialize(GLFWwindow* pWindow, VkInstance instance);
 	void								Update(float dt);
 	void								Render();
+	bool								RecordCommands();
 	void								Destroy();
 
 private:
