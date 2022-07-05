@@ -102,11 +102,14 @@ bool VulkanApplication::CreateInstance()
 	instCreateInfo.enabledExtensionCount = static_cast<uint32_t>(vecExtensions.size());
 	instCreateInfo.ppEnabledExtensionNames = vecExtensions.data();
 
+	VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
 	if (Helper::Vulkan::g_bEnableValidationLayer)
 	{
 		instCreateInfo.enabledLayerCount = static_cast<uint32_t>(Helper::Vulkan::g_strValidationLayers.size());
 		instCreateInfo.ppEnabledLayerNames = Helper::Vulkan::g_strValidationLayers.data();
-		instCreateInfo.pNext = nullptr;
+
+		PopulateDebugMessengerCreateInfo(createInfo);
+		instCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&createInfo;
 	}
 	else
 	{

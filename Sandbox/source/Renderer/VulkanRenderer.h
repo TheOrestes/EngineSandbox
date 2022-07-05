@@ -88,6 +88,7 @@ public:
 	void								Update(float dt);
 	void								Render();
 	bool								RecordCommands();
+	bool								CreateSynchronization();
 	void								Destroy();
 
 private:
@@ -97,5 +98,11 @@ private:
 private:
 	RenderContext*						m_pRC;
 	VulkanDevice*						m_pVulkanDevice;
+
+	// -- Synchronization!
+	uint32_t							m_uiCurrentFrame;
+	std::vector<VkSemaphore>			m_vkListSemaphoreImageAvailable;
+	std::vector<VkSemaphore>			m_vkListSemaphoreRenderFinished;
+	std::vector<VkFence>				m_vkListFences;
 };
 

@@ -7,6 +7,8 @@ VulkanRenderer::VulkanRenderer()
 {
 	m_pRC = new RenderContext();
 	m_pVulkanDevice = nullptr;
+
+	m_uiCurrentFrame = 0;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -19,8 +21,18 @@ VulkanRenderer::~VulkanRenderer()
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::Destroy()
 {
+	vkDeviceWaitIdle(m_pRC->vkDevice);
+	
+	for (uint16_t i = 0; i < Helper::App::gMaxFramesDraws; i++)
+	{
+		vkDestroySemaphore(m_pRC->vkDevice, m_vkListSemaphoreImageAvailable[i], nullptr);
+		vkDestroySemaphore(m_pRC->vkDevice, m_vkListSemaphoreRenderFinished[i], nullptr);
+		vkDestroyFence(m_pRC->vkDevice, m_vkListFences[i], nullptr);
+	}
+
 	vkDestroyPipeline(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipeline, nullptr);
 	vkDestroyPipelineLayout(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipelineLayout, nullptr);
+
 	vkDestroyRenderPass(m_pRC->vkDevice, m_pRC->vkForwardRenderingRenderPass, nullptr);
 	
 	vkDestroySurfaceKHR(m_pRC->vkInst, m_pRC->vkSurface, nullptr);
@@ -45,6 +57,7 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	CHECK(m_pVulkanDevice->CreateCommandPool(m_pRC));
 	CHECK(m_pVulkanDevice->CreateCommandBuffers(m_pRC));
 	CHECK(RecordCommands());
+	CHECK(CreateSynchronization());
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -56,7 +69,62 @@ void VulkanRenderer::Update(float dt)
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::Render()
 {
+	// -- GET NEXT IMAGE
+	// 
+	vkWaitForFences(m_pRC->vkDevice, 1, &m_vkListFences[m_uiCurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	vkResetFences(m_pRC->vkDevice, 1, &m_vkListFences[m_uiCurrentFrame]);
 
+	// Get index of next image to be drawn to & signal semaphore when ready to be drawn to!
+	uint32_t imageIndex;
+	vkAcquireNextImageKHR(	m_pRC->vkDevice, m_pRC->vkSwapchain, std::numeric_limits<uint64_t>::max(), 
+							m_vkListSemaphoreImageAvailable[m_uiCurrentFrame],
+							VK_NULL_HANDLE, &imageIndex);
+
+	// -- SUBMIT COMMAND BUFFER TO RENDER
+	// We ask for image from the swapchain for drawing, but we need to wait till that image is available 
+	// also, we need to wait till our pipeline reaches COLOR_ATTACHMENT_OUTPUT stage.
+	// Once we are done with the drawing to the image using graphics command buffer, we need to signal
+	// saying that we are done with the drawing to the image & that image is ready to PRESENT!
+	
+	// Queue submission info
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &(m_vkListSemaphoreImageAvailable[m_uiCurrentFrame]);						// sempahores to WAIT on
+
+	std::array<VkPipelineStageFlags, 1> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	submitInfo.pWaitDstStageMask = waitStages.data();
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &(m_pRC->vkListGraphicsCommandBuffers[imageIndex]);
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &(m_vkListSemaphoreRenderFinished[m_uiCurrentFrame]);					// semaphores to SIGNAL
+	
+	// Submit the command buffer to Graphics Queue!
+	VkResult result = vkQueueSubmit(m_pRC->vkQueueGraphics, 1, &submitInfo, m_vkListFences[m_uiCurrentFrame]);
+	if (result != VK_SUCCESS)
+	{
+		LOG_ERROR("Failed to submit Command buffer to Queue!");
+		return;
+	}
+
+	// 3. PRESENT RENDER IMAGE TO THE SCREEN!
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &(m_vkListSemaphoreRenderFinished[m_uiCurrentFrame]);
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &(m_pRC->vkSwapchain);
+	presentInfo.pImageIndices = &imageIndex;
+
+	result = vkQueuePresentKHR(m_pRC->vkQueuePresent, &presentInfo);
+	if (result != VK_SUCCESS)
+	{
+		LOG_ERROR("Failed to Present Image!");
+		return;
+	}
+
+	m_uiCurrentFrame = (m_uiCurrentFrame + 1) % Helper::App::gMaxFramesDraws;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -65,7 +133,6 @@ bool VulkanRenderer::RecordCommands()
 	// Information about how to begin each command buffer
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
 	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
 	// Information about how to begin the render pass
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
@@ -76,7 +143,7 @@ bool VulkanRenderer::RecordCommands()
 
 	std::array<VkClearValue, 1> clearValues =
 	{
-		{0.6f, 0.6f, 0.6f, 1.0f}
+		{0.01f, 0.01f, 0.01f, 1.0f}
 	};
 
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -107,8 +174,33 @@ bool VulkanRenderer::RecordCommands()
 
 		LOG_INFO("Framebuffer{0} command recorded", i);
 	}
+}
 
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanRenderer::CreateSynchronization()
+{
+	m_vkListSemaphoreImageAvailable.resize(Helper::App::gMaxFramesDraws);
+	m_vkListSemaphoreRenderFinished.resize(Helper::App::gMaxFramesDraws);
+	m_vkListFences.resize(Helper::App::gMaxFramesDraws);
+
+	// Semaphore creation info
+	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	// Fence creation info
+	VkFenceCreateInfo fenceCreateInfo = {};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	for (uint16_t i = 0; i < Helper::App::gMaxFramesDraws; i++)
+	{
+		VK_CHECK(vkCreateSemaphore(m_pRC->vkDevice, &semaphoreCreateInfo, nullptr, &(m_vkListSemaphoreImageAvailable[i])));
+		VK_CHECK(vkCreateSemaphore(m_pRC->vkDevice, &semaphoreCreateInfo, nullptr, &(m_vkListSemaphoreRenderFinished[i])));
+		VK_CHECK(vkCreateFence(m_pRC->vkDevice, &fenceCreateInfo, nullptr, &(m_vkListFences[i])));
+	}
 	
+
+	return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -174,7 +266,7 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::App::ePipeline pipeline)
 
 			// Dynamic States
 			//std::vector<VkDynamicState> dynamicStates;
-			//dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT1112568+7+);
+			//dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 			//dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
 			//
 			//VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {};

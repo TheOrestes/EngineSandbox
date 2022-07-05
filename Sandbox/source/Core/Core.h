@@ -10,8 +10,8 @@
 #define LOG_DEBUG(...)		Logger::getInstance().GetSandboxLogger()->debug(__VA_ARGS__);
 
 //---------------------------------------------------------------------------------------------------------------------
-const uint16_t gWindowWidht = 960;
-const uint16_t gWindowHeight = 540;
+const uint16_t gWindowWidht = 800;
+const uint16_t gWindowHeight = 600;
 
 //---------------------------------------------------------------------------------------------------------------------
 template<typename T> void SAFE_DELETE(T*& a)
