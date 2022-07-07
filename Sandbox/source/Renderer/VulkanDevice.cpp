@@ -23,12 +23,7 @@ bool VulkanDevice::SetupDevice(RenderContext* pRC)
 	CHECK(AcquirePhysicalDevice(pRC));
 	CHECK(CreateLogicalDevice(pRC));
 	CHECK(m_pSwapchain->CreateSwapchain(pRC, m_QueueFamilyIndices));
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-bool VulkanDevice::SetupFramebuffers(RenderContext* pRC)
-{
-	CHECK(m_pSwapchain->CreateFramebuffers(pRC));
+	return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -201,11 +196,33 @@ bool VulkanDevice::CreateLogicalDevice(RenderContext* pRC)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanDevice::Destroy(RenderContext* pRC)
+void VulkanDevice::Cleanup(RenderContext* pRC)
 {
+	vkFreeCommandBuffers(pRC->vkDevice, pRC->vkGraphicsCommandPool,
+						static_cast<uint32_t>(pRC->vkListGraphicsCommandBuffers.size()),
+						pRC->vkListGraphicsCommandBuffers.data());
 	vkDestroyCommandPool(pRC->vkDevice, pRC->vkGraphicsCommandPool, nullptr);
-	m_pSwapchain->Destroy(pRC);
+	m_pSwapchain->Cleanup(pRC);
 	vkDestroyDevice(pRC->vkDevice, nullptr);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void VulkanDevice::CleanupOnWindowsResize(RenderContext* pRC)
+{
+	m_pSwapchain->CleanupOnWindowsResize(pRC);
+
+	// clean-up existing command buffer & reuse existing pool to allocate new command buffers instead of recreating it!
+	vkFreeCommandBuffers(pRC->vkDevice, pRC->vkGraphicsCommandPool, 
+						static_cast<uint32_t>(pRC->vkListGraphicsCommandBuffers.size()), 
+						pRC->vkListGraphicsCommandBuffers.data());
+
+	LOG_DEBUG("Vulkan Device Cleanup on Windows resize");
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void VulkanDevice::HandleWindowsResize(RenderContext* pRC)
+{
+	m_pSwapchain->CreateSwapchain(pRC, m_QueueFamilyIndices);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

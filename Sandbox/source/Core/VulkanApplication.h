@@ -16,7 +16,7 @@ public:
 	virtual bool				Initialize(void* pWindow) override;
 	virtual void				Update(float dt) override;
 	virtual void				Render() override;
-	virtual void				Destroy() override;
+	virtual void				Cleanup() override;
 
 private:
 	VulkanApplication(const VulkanApplication&);

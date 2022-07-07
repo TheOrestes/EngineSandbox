@@ -8,6 +8,7 @@
 #include "IRenderer.h"
 
 class VulkanDevice;
+class VulkanFrameBuffer;
 
 //--- Global Render Context
 struct RenderContext
@@ -87,17 +88,23 @@ public:
 	bool								Initialize(GLFWwindow* pWindow, VkInstance instance);
 	void								Update(float dt);
 	void								Render();
+	void								HandleWindowsResize();
 	bool								RecordCommands();
 	bool								CreateSynchronization();
-	void								Destroy();
+	void								Cleanup();
+	void								CleanupOnWindowsResize();
 
 private:
+	bool								CreateVulkanDevice();
+	bool								CreateFrameBuffers();
+	bool								CreateCommandBuffers();
 	bool								CreateGraphicsPipeline(Helper::App::ePipeline pipeline);
 	bool								CreateRenderPass();
 
 private:
 	RenderContext*						m_pRC;
 	VulkanDevice*						m_pVulkanDevice;
+	VulkanFrameBuffer*					m_pFrameBuffer;
 
 	// -- Synchronization!
 	uint32_t							m_uiCurrentFrame;

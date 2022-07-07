@@ -19,23 +19,17 @@ struct SwapchainInfo
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-struct SwapchainImage
-{
-	VkImage		image;
-	VkImageView imageView;
-};
-
-//---------------------------------------------------------------------------------------------------------------------
 class VulkanSwapchain
 {
 public:
 	VulkanSwapchain();
 	~VulkanSwapchain();
 
-	void								Destroy(const RenderContext* pRC);
+	void								Cleanup(const RenderContext* pRC);
+	void								CleanupOnWindowsResize(const RenderContext* pRC);
+	void								HandleWindowsResize(RenderContext* pRC);
 
 	bool								CreateSwapchain(RenderContext* pRC, const QueueFamilyIndices& queueFamilyIndices);
-	bool								CreateFramebuffers(RenderContext* pRC);
 	void								FetchSwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 	inline bool							isSwapchainValid() const { return m_SwapchainInfo.isValid(); } 
@@ -43,15 +37,10 @@ public:
 private:
 	VkSurfaceFormatKHR					ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
 	VkPresentModeKHR					ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-	VkExtent2D							ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* pWindow);
-
-	bool								CreateImageView(const RenderContext* pRC, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView* imgView);
+	VkExtent2D							ChooseSwapExtent(const RenderContext* pRC);
 
 private:
 	uint32_t							m_uiImageCount;
 	SwapchainInfo						m_SwapchainInfo;
-
-public:
-	std::vector<SwapchainImage>			m_vecSwapchainImages;
 };
 

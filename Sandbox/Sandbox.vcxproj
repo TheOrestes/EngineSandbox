@@ -22,6 +22,7 @@
     <ClInclude Include="source\Renderer\VulkanDevice.h" />
     <ClInclude Include="source\Renderer\VulkanRenderer.h" />
     <ClInclude Include="source\Renderer\VulkanSwapchain.h" />
+    <ClInclude Include="source\Renderer\VulkanFrameBuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Core\Logger.cpp" />
@@ -34,6 +35,7 @@
     <ClCompile Include="source\Renderer\VulkanDevice.cpp" />
     <ClCompile Include="source\Renderer\VulkanRenderer.cpp" />
     <ClCompile Include="source\Renderer\VulkanSwapchain.cpp" />
+    <ClCompile Include="source\Renderer\VulkanFrameBuffer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

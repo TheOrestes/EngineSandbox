@@ -1,12 +1,15 @@
 #include "sandboxPCH.h"
 #include "VulkanRenderer.h"
 #include "VulkanDevice.h"
+#include "VulkanFrameBuffer.h"
+#include "Core/Core.h"
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanRenderer::VulkanRenderer()
 {
 	m_pRC = new RenderContext();
 	m_pVulkanDevice = nullptr;
+	m_pFrameBuffer = nullptr;
 
 	m_uiCurrentFrame = 0;
 }
@@ -14,12 +17,13 @@ VulkanRenderer::VulkanRenderer()
 //---------------------------------------------------------------------------------------------------------------------
 VulkanRenderer::~VulkanRenderer()
 {
-	SAFE_DELETE(m_pRC);
+	SAFE_DELETE(m_pFrameBuffer);
 	SAFE_DELETE(m_pVulkanDevice);
+	SAFE_DELETE(m_pRC);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanRenderer::Destroy()
+void VulkanRenderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_pRC->vkDevice);
 	
@@ -33,10 +37,39 @@ void VulkanRenderer::Destroy()
 	vkDestroyPipeline(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipeline, nullptr);
 	vkDestroyPipelineLayout(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipelineLayout, nullptr);
 
+	m_pFrameBuffer->Cleanup(m_pRC);
+
 	vkDestroyRenderPass(m_pRC->vkDevice, m_pRC->vkForwardRenderingRenderPass, nullptr);
 	
 	vkDestroySurfaceKHR(m_pRC->vkInst, m_pRC->vkSurface, nullptr);
-	m_pVulkanDevice->Destroy(m_pRC);
+	m_pVulkanDevice->Cleanup(m_pRC);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanRenderer::CreateVulkanDevice()
+{
+	m_pVulkanDevice = new VulkanDevice(m_pRC);
+	CHECK(m_pVulkanDevice->SetupDevice(m_pRC));
+
+	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanRenderer::CreateFrameBuffers()
+{
+	m_pFrameBuffer = new VulkanFrameBuffer();
+	CHECK(m_pFrameBuffer->CreateFramebuffers(m_pRC));
+	
+	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanRenderer::CreateCommandBuffers()
+{	
+	CHECK(m_pVulkanDevice->CreateCommandPool(m_pRC));
+	CHECK(m_pVulkanDevice->CreateCommandBuffers(m_pRC));
+	
+	return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -48,14 +81,11 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	// Create surface
 	VK_CHECK(glfwCreateWindowSurface(instance, pWindow, nullptr, &(m_pRC->vkSurface)));
 
-	// Create Vulkan device...
-	m_pVulkanDevice = new VulkanDevice(m_pRC);
-	CHECK(m_pVulkanDevice->SetupDevice(m_pRC));
+	CHECK(CreateVulkanDevice());
 	CHECK(CreateRenderPass());
+	CHECK(CreateFrameBuffers());
 	CHECK(CreateGraphicsPipeline(Helper::App::FORWARD));
-	CHECK(m_pVulkanDevice->SetupFramebuffers(m_pRC));
-	CHECK(m_pVulkanDevice->CreateCommandPool(m_pRC));
-	CHECK(m_pVulkanDevice->CreateCommandBuffers(m_pRC));
+	CHECK(CreateCommandBuffers());
 	CHECK(RecordCommands());
 	CHECK(CreateSynchronization());
 }
@@ -76,9 +106,28 @@ void VulkanRenderer::Render()
 
 	// Get index of next image to be drawn to & signal semaphore when ready to be drawn to!
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(	m_pRC->vkDevice, m_pRC->vkSwapchain, std::numeric_limits<uint64_t>::max(), 
-							m_vkListSemaphoreImageAvailable[m_uiCurrentFrame],
-							VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(	m_pRC->vkDevice, m_pRC->vkSwapchain, std::numeric_limits<uint64_t>::max(), 
+												m_vkListSemaphoreImageAvailable[m_uiCurrentFrame],
+												VK_NULL_HANDLE, &imageIndex);
+
+	// During any event such as window size change etc. we need to check if swap chain recreation is necessary
+	// Vulkan tells us that swap chain in no longer adequate during presentation
+	// VK_ERROR_OUT_OF_DATE_KHR = swap chain has become incompatible with the surface & can no longer be used for rendering. (window resize)
+	// VK_SUBOPTIMAL_KHR = swap chain can be still used to present to the surface but the surface properties are no longer matching!
+
+	// if swap chain is out of date while acquiring the image, then its not possible to present it!
+	// We should recreate the swap chain & try again in the next draw call...
+	//if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	//{
+	//	HandleWindowsResize();
+	//	return;
+	//}
+	//else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	//{
+	//	LOG_ERROR("Failed to acquire swapchain image!");
+	//	return;
+	//}
+
 
 	// -- SUBMIT COMMAND BUFFER TO RENDER
 	// We ask for image from the swapchain for drawing, but we need to wait till that image is available 
@@ -101,7 +150,7 @@ void VulkanRenderer::Render()
 	submitInfo.pSignalSemaphores = &(m_vkListSemaphoreRenderFinished[m_uiCurrentFrame]);					// semaphores to SIGNAL
 	
 	// Submit the command buffer to Graphics Queue!
-	VkResult result = vkQueueSubmit(m_pRC->vkQueueGraphics, 1, &submitInfo, m_vkListFences[m_uiCurrentFrame]);
+	result = vkQueueSubmit(m_pRC->vkQueueGraphics, 1, &submitInfo, m_vkListFences[m_uiCurrentFrame]);
 	if (result != VK_SUCCESS)
 	{
 		LOG_ERROR("Failed to submit Command buffer to Queue!");
@@ -128,6 +177,49 @@ void VulkanRenderer::Render()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+void VulkanRenderer::CleanupOnWindowsResize()
+{
+	vkDestroyPipeline(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipeline, nullptr);
+	vkDestroyPipelineLayout(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipelineLayout, nullptr);
+
+	vkDestroyRenderPass(m_pRC->vkDevice, m_pRC->vkForwardRenderingRenderPass, nullptr);
+
+	m_pFrameBuffer->CleanupOnWindowsResize(m_pRC);
+	m_pVulkanDevice->CleanupOnWindowsResize(m_pRC);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void VulkanRenderer::HandleWindowsResize()
+{
+	int width = 0, height = 0;
+	glfwGetFramebufferSize(m_pRC->pWindow, &width, &height);
+	while (width == 0 || height == 0)
+	{
+		glfwGetFramebufferSize(m_pRC->pWindow, &width, &height);
+		glfwWaitEvents();
+	}
+
+	// we shouldn't touch resources that are still in use!
+	vkDeviceWaitIdle(m_pRC->vkDevice);
+
+	// Perform cleanup on old version
+	CleanupOnWindowsResize();
+
+	// Recreate...! 
+	LOG_DEBUG("Starting to Handle windows resize...");
+
+	m_pVulkanDevice->HandleWindowsResize(m_pRC);
+	CreateRenderPass();
+	CreateGraphicsPipeline(Helper::App::FORWARD);
+
+	m_pFrameBuffer->HandleWindowResize(m_pRC);
+	
+	m_pVulkanDevice->CreateCommandBuffers(m_pRC);
+
+	LOG_DEBUG("Windows resized handled gracefully!");
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 bool VulkanRenderer::RecordCommands()
 {
 	// Information about how to begin each command buffer
@@ -149,7 +241,6 @@ bool VulkanRenderer::RecordCommands()
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassBeginInfo.pClearValues = clearValues.data();
 	
-
 	for(uint32_t i = 0; i < m_pRC->vkListGraphicsCommandBuffers.size(); i++)
 	{
 		renderPassBeginInfo.framebuffer = m_pRC->vkListFramebuffers[i];

@@ -12,5 +12,7 @@ public:
 	virtual bool	Initialize(GLFWwindow* pWindow, VkInstance instance) = 0;
 	virtual void	Update(float dt) = 0;
 	virtual void	Render() = 0;
-	virtual void	Destroy() = 0;
+	virtual void	HandleWindowsResize() = 0;
+	virtual void	Cleanup() = 0;
+	virtual void	CleanupOnWindowsResize() = 0;
 };

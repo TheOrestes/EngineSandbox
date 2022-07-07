@@ -9,6 +9,6 @@ public:
 	virtual bool	Initialize(void* pWindow) = 0;
 	virtual void	Update(float dt) = 0;
 	virtual void	Render() = 0;
-	virtual void	Destroy() = 0;
+	virtual void	Cleanup() = 0;
 };
 

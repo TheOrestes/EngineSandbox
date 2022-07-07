@@ -15,15 +15,22 @@ VulkanSwapchain::~VulkanSwapchain()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanSwapchain::Destroy(const RenderContext* pRC)
+void VulkanSwapchain::Cleanup(const RenderContext* pRC)
 {
-	for (uint32_t i = 0 ; i < m_vecSwapchainImages.size(); i++)
-	{
-		vkDestroyFramebuffer(pRC->vkDevice, pRC->vkListFramebuffers[i], nullptr);
-		vkDestroyImageView(pRC->vkDevice, m_vecSwapchainImages[i].imageView, nullptr);
-	}
-
 	vkDestroySwapchainKHR(pRC->vkDevice, pRC->vkSwapchain, nullptr);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void VulkanSwapchain::CleanupOnWindowsResize(const RenderContext* pRC)
+{
+	vkDestroySwapchainKHR(pRC->vkDevice, pRC->vkSwapchain, nullptr);
+	LOG_DEBUG("Swapchain Cleanup on Windows resize");
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void VulkanSwapchain::HandleWindowsResize(RenderContext* pRC)
+{
+
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -36,7 +43,7 @@ bool VulkanSwapchain::CreateSwapchain(RenderContext* pRC, const QueueFamilyIndic
 	VkPresentModeKHR presentMode = ChooseSwapPresentMode(m_SwapchainInfo.surfacePresentModes);
 
 	// 3. Choose Swapchain image resolution
-	VkExtent2D extent = ChooseSwapExtent(m_SwapchainInfo.surfaceCapabilities, pRC->pWindow);
+	VkExtent2D extent = ChooseSwapExtent(pRC);
 
 	// decide how many images to have in the swap chain, it's good practice to have an extra count.
 	// Also make sure it does not exceed maximum number of images
@@ -84,71 +91,14 @@ bool VulkanSwapchain::CreateSwapchain(RenderContext* pRC, const QueueFamilyIndic
 
 	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	VK_CHECK(vkCreateSwapchainKHR(pRC->vkDevice, &swapchainCreateInfo, nullptr, &(pRC->vkSwapchain)));
+	VkResult result = vkCreateSwapchainKHR(pRC->vkDevice, &swapchainCreateInfo, nullptr, &(pRC->vkSwapchain));
 
 	LOG_DEBUG("Vulkan Swapchain Created!");
 
 	// Save this for later purposes. 
 	pRC->vkSwapchainImageFormat = surfaceFormat.format;
 	pRC->vkSwapchainExtent = extent;
-
-	uint32_t swapchainImageCount;
-	vkGetSwapchainImagesKHR(pRC->vkDevice, pRC->vkSwapchain, &swapchainImageCount, nullptr);
-
-	std::vector<VkImage> images(swapchainImageCount);
-	vkGetSwapchainImagesKHR(pRC->vkDevice, pRC->vkSwapchain, &swapchainImageCount, images.data());
-
-	for (VkImage image : images)
-	{
-		// store image handle
-		SwapchainImage swapchainImage= {};
-		swapchainImage.image = image;
-
-		// Create Image View
-		CreateImageView(pRC, image, pRC->vkSwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, &(swapchainImage.imageView));
-
-		// Add to the list...
-		m_vecSwapchainImages.push_back(swapchainImage);
-	}
-
-	LOG_DEBUG("Swapchain Images & Imageviews created");
 		 
-	return true;
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-bool VulkanSwapchain::CreateFramebuffers(RenderContext* pRC)
-{
-	if (pRC->vkForwardRenderingRenderPass == VK_NULL_HANDLE)
-	{
-		LOG_ERROR("Renderpass not set!!!");
-		return false;
-	}
-
-	pRC->vkListFramebuffers.resize(m_vecSwapchainImages.size());
-
-	// create framebuffer for each swapchain image
-	for (uint32_t i = 0; i < m_vecSwapchainImages.size(); i++)
-	{
-		std::array<VkImageView, 1> attachments =
-		{
-			m_vecSwapchainImages[i].imageView
-		};
-
-		VkFramebufferCreateInfo fbCreateInfo = {};
-		fbCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		fbCreateInfo.renderPass = pRC->vkForwardRenderingRenderPass;
-		fbCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		fbCreateInfo.pAttachments = attachments.data();
-		fbCreateInfo.width = pRC->vkSwapchainExtent.width;
-		fbCreateInfo.height = pRC->vkSwapchainExtent.height;
-		fbCreateInfo.layers = 1;
-
-		VK_CHECK(vkCreateFramebuffer(pRC->vkDevice, &fbCreateInfo, nullptr, &(pRC->vkListFramebuffers[i])));
-	}
-
-	LOG_DEBUG("Framebuffers created!");
-
 	return true;
 }
 
@@ -157,9 +107,6 @@ bool VulkanSwapchain::CreateFramebuffers(RenderContext* pRC)
 
 void VulkanSwapchain::FetchSwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
-	// Get the surface capabilities for a given device
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &m_SwapchainInfo.surfaceCapabilities);
-
 	// Get the formats
 	uint32_t formatCount = 0;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,nullptr);
@@ -220,8 +167,11 @@ VkPresentModeKHR VulkanSwapchain::ChooseSwapPresentMode(const std::vector<VkPres
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-VkExtent2D VulkanSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* pWindow)
+VkExtent2D VulkanSwapchain::ChooseSwapExtent(const RenderContext* pRC)
 {
+	// Get the surface capabilities for a given device
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pRC->vkPhysicalDevice, pRC->vkSurface, &m_SwapchainInfo.surfaceCapabilities);
+
 	// The swap extent is the resolution of the swap chain images and it's almost always exactly equal to the 
 	// resolution of the window that we're drawing to.The range of the possible resolutions is defined in the 
 	// VkSurfaceCapabilitiesKHR structure.Vulkan tells us to match the resolution of the window by setting the 
@@ -229,46 +179,27 @@ VkExtent2D VulkanSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& cap
 	// and this is indicated by setting the width and height in currentExtent to a special value : the maximum 
 	// value of uint32_t. In that case we'll pick the resolution that best matches the window within the 
 	// minImageExtent and maxImageExtent bounds.
-	if (capabilities.currentExtent.width != UINT32_MAX)
+	if (m_SwapchainInfo.surfaceCapabilities.currentExtent.width != UINT32_MAX)
 	{
-		return capabilities.currentExtent;
+		return m_SwapchainInfo.surfaceCapabilities.currentExtent;
 	}
 	else
 	{
 		// To handle window resize properly, query current width-height of framebuffer, instead of global value!
 		int width, height;
-		glfwGetFramebufferSize(pWindow, &width, &height);
+		glfwGetFramebufferSize(pRC->pWindow, &width, &height);
 
 		//VkExtent2D actualExtent = { App::WIDTH, App::HEIGHT };
 		VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
-		actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-		actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+		actualExtent.width =  std::clamp(actualExtent.width,  m_SwapchainInfo.surfaceCapabilities.minImageExtent.width, 
+										m_SwapchainInfo.surfaceCapabilities.maxImageExtent.width);
+		actualExtent.height = std::clamp(actualExtent.height, m_SwapchainInfo.surfaceCapabilities.minImageExtent.height, 
+										m_SwapchainInfo.surfaceCapabilities.maxImageExtent.height);
 
 		return actualExtent;
 	}
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanSwapchain::CreateImageView(const RenderContext* pRC, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView* imageView)
-{
-	VkImageViewCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	createInfo.format = format;
-	createInfo.image = image;
-	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
-	createInfo.subresourceRange.aspectMask = aspectFlags;
-	createInfo.subresourceRange.baseMipLevel = 0;
-	createInfo.subresourceRange.levelCount = 1;
-	createInfo.subresourceRange.baseArrayLayer = 0;
-	createInfo.subresourceRange.layerCount = 1;
-
-	VK_CHECK(vkCreateImageView(pRC->vkDevice, &createInfo, nullptr, imageView));
-
-	return true;
-}

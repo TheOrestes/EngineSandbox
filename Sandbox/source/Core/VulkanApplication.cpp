@@ -46,9 +46,9 @@ void VulkanApplication::Render()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanApplication::Destroy()
+void VulkanApplication::Cleanup()
 {
-	m_pVulkanRenderer->Destroy();
+	m_pVulkanRenderer->Cleanup();
 
 	if (Helper::Vulkan::g_bEnableValidationLayer)
 	{

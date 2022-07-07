@@ -28,10 +28,11 @@ public:
 	~VulkanDevice();
 
 	bool								SetupDevice(RenderContext* pRC);
-	bool								SetupFramebuffers(RenderContext* pRC);
 	bool								CreateCommandPool(RenderContext* pRC);
 	bool								CreateCommandBuffers(RenderContext* pRC);
-	void								Destroy(RenderContext* pRC);
+	void								HandleWindowsResize(RenderContext* pRC);
+	void								Cleanup(RenderContext* pRC);
+	void								CleanupOnWindowsResize(RenderContext* pRC);
 
 private:
 	bool								AcquirePhysicalDevice(RenderContext* pRC);
