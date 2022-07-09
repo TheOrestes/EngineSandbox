@@ -2,6 +2,7 @@
 #include "VulkanDevice.h"
 #include "VulkanSwapchain.h"
 #include "VulkanRenderer.h"
+#include "VulkanContext.h"
 #include "Core/Core.h"
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -15,26 +16,26 @@ VulkanSwapchain::~VulkanSwapchain()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanSwapchain::Cleanup(const RenderContext* pRC)
+void VulkanSwapchain::Cleanup(VulkanContext* pContext)
 {
-	vkDestroySwapchainKHR(pRC->vkDevice, pRC->vkSwapchain, nullptr);
+	vkDestroySwapchainKHR(pContext->vkDevice, pContext->vkSwapchain, nullptr);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanSwapchain::CleanupOnWindowsResize(const RenderContext* pRC)
+void VulkanSwapchain::CleanupOnWindowsResize(VulkanContext* pContext)
 {
-	vkDestroySwapchainKHR(pRC->vkDevice, pRC->vkSwapchain, nullptr);
+	vkDestroySwapchainKHR(pContext->vkDevice, pContext->vkSwapchain, nullptr);
 	LOG_DEBUG("Swapchain Cleanup on Windows resize");
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanSwapchain::HandleWindowsResize(RenderContext* pRC)
+void VulkanSwapchain::HandleWindowsResize(VulkanContext* pContext)
 {
 
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanSwapchain::CreateSwapchain(RenderContext* pRC, const QueueFamilyIndices& queueFamilyIndices)
+bool VulkanSwapchain::CreateSwapchain(VulkanContext* pContext, const QueueFamilyIndices& queueFamilyIndices)
 {
 	// 1. Choose best surface format
 	VkSurfaceFormatKHR surfaceFormat = ChooseBestSurfaceFormat(m_SwapchainInfo.surfaceFormats);
@@ -43,7 +44,7 @@ bool VulkanSwapchain::CreateSwapchain(RenderContext* pRC, const QueueFamilyIndic
 	VkPresentModeKHR presentMode = ChooseSwapPresentMode(m_SwapchainInfo.surfacePresentModes);
 
 	// 3. Choose Swapchain image resolution
-	VkExtent2D extent = ChooseSwapExtent(pRC);
+	VkExtent2D extent = ChooseSwapExtent(pContext);
 
 	// decide how many images to have in the swap chain, it's good practice to have an extra count.
 	// Also make sure it does not exceed maximum number of images
@@ -57,7 +58,7 @@ bool VulkanSwapchain::CreateSwapchain(RenderContext* pRC, const QueueFamilyIndic
 	// Swapchain creation info
 	VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapchainCreateInfo.surface = pRC->vkSurface;
+	swapchainCreateInfo.surface = pContext->vkSurface;
 	swapchainCreateInfo.imageFormat = surfaceFormat.format;
 	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
 	swapchainCreateInfo.presentMode = presentMode;
@@ -91,13 +92,13 @@ bool VulkanSwapchain::CreateSwapchain(RenderContext* pRC, const QueueFamilyIndic
 
 	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	VkResult result = vkCreateSwapchainKHR(pRC->vkDevice, &swapchainCreateInfo, nullptr, &(pRC->vkSwapchain));
+	VkResult result = vkCreateSwapchainKHR(pContext->vkDevice, &swapchainCreateInfo, nullptr, &(pContext->vkSwapchain));
 
 	LOG_DEBUG("Vulkan Swapchain Created!");
 
 	// Save this for later purposes. 
-	pRC->vkSwapchainImageFormat = surfaceFormat.format;
-	pRC->vkSwapchainExtent = extent;
+	pContext->vkSwapchainImageFormat = surfaceFormat.format;
+	pContext->vkSwapchainExtent = extent;
 		 
 	return true;
 }
@@ -167,10 +168,10 @@ VkPresentModeKHR VulkanSwapchain::ChooseSwapPresentMode(const std::vector<VkPres
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-VkExtent2D VulkanSwapchain::ChooseSwapExtent(const RenderContext* pRC)
+VkExtent2D VulkanSwapchain::ChooseSwapExtent(const VulkanContext* pContext)
 {
 	// Get the surface capabilities for a given device
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pRC->vkPhysicalDevice, pRC->vkSurface, &m_SwapchainInfo.surfaceCapabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pContext->vkPhysicalDevice, pContext->vkSurface, &m_SwapchainInfo.surfaceCapabilities);
 
 	// The swap extent is the resolution of the swap chain images and it's almost always exactly equal to the 
 	// resolution of the window that we're drawing to.The range of the possible resolutions is defined in the 
@@ -187,7 +188,7 @@ VkExtent2D VulkanSwapchain::ChooseSwapExtent(const RenderContext* pRC)
 	{
 		// To handle window resize properly, query current width-height of framebuffer, instead of global value!
 		int width, height;
-		glfwGetFramebufferSize(pRC->pWindow, &width, &height);
+		glfwGetFramebufferSize(pContext->pWindow, &width, &height);
 
 		//VkExtent2D actualExtent = { App::WIDTH, App::HEIGHT };
 		VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };

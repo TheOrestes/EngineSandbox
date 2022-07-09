@@ -1,6 +1,7 @@
 #include "sandboxPCH.h"
 #include "VulkanRenderer.h"
 #include "VulkanFrameBuffer.h"
+#include "VulkanContext.h"
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanFrameBuffer::VulkanFrameBuffer()
@@ -15,52 +16,52 @@ VulkanFrameBuffer::~VulkanFrameBuffer()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanFrameBuffer::Cleanup(RenderContext* pRC)
+void VulkanFrameBuffer::Cleanup(VulkanContext* pContext)
 {
 	for (uint32_t i = 0; i < m_ListAttachments.size(); i++)
 	{
-		vkDestroyFramebuffer(pRC->vkDevice, pRC->vkListFramebuffers[i], nullptr);
-		vkDestroyImageView(pRC->vkDevice, m_ListAttachments[i].imageView, nullptr);
+		vkDestroyFramebuffer(pContext->vkDevice, pContext->vkListFramebuffers[i], nullptr);
+		vkDestroyImageView(pContext->vkDevice, m_ListAttachments[i].imageView, nullptr);
 	}
 
 	m_ListAttachments.clear();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanFrameBuffer::CleanupOnWindowsResize(RenderContext* pRC)
+void VulkanFrameBuffer::CleanupOnWindowsResize(VulkanContext* pContext)
 {
 	for (uint32_t i = 0; i < m_ListAttachments.size(); i++)
 	{
-		vkDestroyFramebuffer(pRC->vkDevice, pRC->vkListFramebuffers[i], nullptr);
-		vkDestroyImageView(pRC->vkDevice, m_ListAttachments[i].imageView, nullptr);
+		vkDestroyFramebuffer(pContext->vkDevice, pContext->vkListFramebuffers[i], nullptr);
+		vkDestroyImageView(pContext->vkDevice, m_ListAttachments[i].imageView, nullptr);
 	}
 
 	m_ListAttachments.clear();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanFrameBuffer::HandleWindowResize(RenderContext* pRC)
+void VulkanFrameBuffer::HandleWindowResize(VulkanContext* pContext)
 {
 	uint32_t swapchainImageCount;
-	vkGetSwapchainImagesKHR(pRC->vkDevice, pRC->vkSwapchain, &swapchainImageCount, nullptr);
+	vkGetSwapchainImagesKHR(pContext->vkDevice, pContext->vkSwapchain, &swapchainImageCount, nullptr);
 
 	std::vector<VkImage> images(swapchainImageCount);
-	vkGetSwapchainImagesKHR(pRC->vkDevice, pRC->vkSwapchain, &swapchainImageCount, images.data());
+	vkGetSwapchainImagesKHR(pContext->vkDevice, pContext->vkSwapchain, &swapchainImageCount, images.data());
 
 	for (VkImage image : images)
 	{
 		// store image handle
-		Helper::Vulkan::SwapchainAttachment swapchainImage = {};
+		Helper::SwapchainAttachment swapchainImage = {};
 		swapchainImage.image = image;
 
 		// Create Image View
-		Helper::Vulkan::CreateImageView2D(pRC->vkDevice, image, pRC->vkSwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, &(swapchainImage.imageView));
+		pContext->CreateImageView2D(image, pContext->vkSwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, &(swapchainImage.imageView));
 
 		// Add to the list...
 		m_ListAttachments.push_back(swapchainImage);
 	}
 
-	pRC->vkListFramebuffers.resize(m_ListAttachments.size());
+	pContext->vkListFramebuffers.resize(m_ListAttachments.size());
 
 	// create framebuffer for each swapchain image
 	for (uint32_t i = 0; i < m_ListAttachments.size(); i++)
@@ -72,14 +73,14 @@ void VulkanFrameBuffer::HandleWindowResize(RenderContext* pRC)
 
 		VkFramebufferCreateInfo fbCreateInfo = {};
 		fbCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		fbCreateInfo.renderPass = pRC->vkForwardRenderingRenderPass;
+		fbCreateInfo.renderPass = pContext->vkForwardRenderingRenderPass;
 		fbCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		fbCreateInfo.pAttachments = attachments.data();
-		fbCreateInfo.width = pRC->vkSwapchainExtent.width;
-		fbCreateInfo.height = pRC->vkSwapchainExtent.height;
+		fbCreateInfo.width = pContext->vkSwapchainExtent.width;
+		fbCreateInfo.height = pContext->vkSwapchainExtent.height;
 		fbCreateInfo.layers = 1;
 
-		VkResult result = vkCreateFramebuffer(pRC->vkDevice, &fbCreateInfo, nullptr, &(pRC->vkListFramebuffers[i]));
+		VkResult result = vkCreateFramebuffer(pContext->vkDevice, &fbCreateInfo, nullptr, &(pContext->vkListFramebuffers[i]));
 		if (result != VK_SUCCESS)
 		{
 			LOG_ERROR("Failed to Re-Create Framebuffer on Windows Resize!");
@@ -89,22 +90,22 @@ void VulkanFrameBuffer::HandleWindowResize(RenderContext* pRC)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanFrameBuffer::CreateFramebuffers(RenderContext* pRC)
+bool VulkanFrameBuffer::CreateFramebuffers(VulkanContext* pContext)
 {
 	uint32_t swapchainImageCount;
-	VK_CHECK(vkGetSwapchainImagesKHR(pRC->vkDevice, pRC->vkSwapchain, &swapchainImageCount, nullptr));
+	VK_CHECK(vkGetSwapchainImagesKHR(pContext->vkDevice, pContext->vkSwapchain, &swapchainImageCount, nullptr));
 
 	std::vector<VkImage> images(swapchainImageCount);
-	VK_CHECK(vkGetSwapchainImagesKHR(pRC->vkDevice, pRC->vkSwapchain, &swapchainImageCount, images.data()));
+	VK_CHECK(vkGetSwapchainImagesKHR(pContext->vkDevice, pContext->vkSwapchain, &swapchainImageCount, images.data()));
 
 	for (VkImage image : images)
 	{
 		// store image handle
-		Helper::Vulkan::SwapchainAttachment swapchainImage = {};
+		Helper::SwapchainAttachment swapchainImage = {};
 		swapchainImage.image = image;
 
 		// Create Image View
-		Helper::Vulkan::CreateImageView2D(pRC->vkDevice, image, pRC->vkSwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, &(swapchainImage.imageView));
+		pContext->CreateImageView2D(image, pContext->vkSwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, &(swapchainImage.imageView));
 
 		// Add to the list...
 		m_ListAttachments.push_back(swapchainImage);
@@ -113,13 +114,13 @@ bool VulkanFrameBuffer::CreateFramebuffers(RenderContext* pRC)
 	LOG_DEBUG("Framebuffer attachments created");
 
 	// Check if RenderPass exists!
-	if (pRC->vkForwardRenderingRenderPass == VK_NULL_HANDLE)
+	if (pContext->vkForwardRenderingRenderPass == VK_NULL_HANDLE)
 	{
 		LOG_ERROR("Renderpass not set!!!");
 		return false;
 	}
 
-	pRC->vkListFramebuffers.resize(m_ListAttachments.size());
+	pContext->vkListFramebuffers.resize(m_ListAttachments.size());
 
 	// create framebuffer for each swapchain image
 	for (uint32_t i = 0; i < m_ListAttachments.size(); i++)
@@ -131,14 +132,14 @@ bool VulkanFrameBuffer::CreateFramebuffers(RenderContext* pRC)
 
 		VkFramebufferCreateInfo fbCreateInfo = {};
 		fbCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		fbCreateInfo.renderPass = pRC->vkForwardRenderingRenderPass;
+		fbCreateInfo.renderPass = pContext->vkForwardRenderingRenderPass;
 		fbCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		fbCreateInfo.pAttachments = attachments.data();
-		fbCreateInfo.width = pRC->vkSwapchainExtent.width;
-		fbCreateInfo.height = pRC->vkSwapchainExtent.height;
+		fbCreateInfo.width = pContext->vkSwapchainExtent.width;
+		fbCreateInfo.height = pContext->vkSwapchainExtent.height;
 		fbCreateInfo.layers = 1;
 
-		VK_CHECK(vkCreateFramebuffer(pRC->vkDevice, &fbCreateInfo, nullptr, &(pRC->vkListFramebuffers[i])));
+		VK_CHECK(vkCreateFramebuffer(pContext->vkDevice, &fbCreateInfo, nullptr, &(pContext->vkListFramebuffers[i])));
 	}
 
 	LOG_DEBUG("Framebuffers created!");

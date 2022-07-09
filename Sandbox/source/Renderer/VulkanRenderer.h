@@ -7,76 +7,10 @@
 
 #include "IRenderer.h"
 
+class VulkanContext;
 class VulkanDevice;
 class VulkanFrameBuffer;
-
-//--- Global Render Context
-struct RenderContext
-{
-	RenderContext()
-	{
-		pWindow = nullptr;
-
-		vkInst = VK_NULL_HANDLE;
-		vkSurface = VK_NULL_HANDLE;
-		vkPhysicalDevice = VK_NULL_HANDLE;
-		vkDevice = VK_NULL_HANDLE;
-
-		vkSwapchain = VK_NULL_HANDLE;
-
-		vkQueueGraphics = VK_NULL_HANDLE;
-		vkQueuePresent = VK_NULL_HANDLE;
-
-		vkForwardRenderingPipeline = VK_NULL_HANDLE;
-		vkForwardRenderingPipelineLayout = VK_NULL_HANDLE;
-		vkForwardRenderingRenderPass = VK_NULL_HANDLE;
-
-		vkListFramebuffers.clear();
-	}
-
-	~RenderContext() 
-	{
-		pWindow = nullptr;
-
-		vkInst = VK_NULL_HANDLE;
-		vkSurface = VK_NULL_HANDLE;
-		vkPhysicalDevice = VK_NULL_HANDLE;
-		vkDevice = VK_NULL_HANDLE;
-
-		vkSwapchain = VK_NULL_HANDLE;
-
-		vkQueueGraphics = VK_NULL_HANDLE;
-		vkQueuePresent = VK_NULL_HANDLE;
-
-		vkForwardRenderingPipeline = VK_NULL_HANDLE;
-		vkForwardRenderingPipelineLayout = VK_NULL_HANDLE;
-		vkForwardRenderingRenderPass = VK_NULL_HANDLE;
-
-		vkListFramebuffers.clear();
-	}
-
-	VkInstance						vkInst;
-	GLFWwindow*						pWindow;
-	VkSurfaceKHR					vkSurface;
-	VkPhysicalDevice				vkPhysicalDevice;
-	VkDevice						vkDevice;
-
-	VkSwapchainKHR					vkSwapchain;
-	VkExtent2D						vkSwapchainExtent;
-	VkFormat						vkSwapchainImageFormat;
-
-	VkQueue							vkQueueGraphics;
-	VkQueue							vkQueuePresent;
-
-	VkCommandPool					vkGraphicsCommandPool;
-	std::vector<VkCommandBuffer>	vkListGraphicsCommandBuffers;
-
-	VkPipeline						vkForwardRenderingPipeline;
-	VkPipelineLayout				vkForwardRenderingPipelineLayout;
-	VkRenderPass					vkForwardRenderingRenderPass;
-
-	std::vector<VkFramebuffer>		vkListFramebuffers;
-};
+class VulkanMesh;
 
 //---------------------------------------------------------------------------------------------------------------------
 class VulkanRenderer : public IRenderer
@@ -98,11 +32,11 @@ private:
 	bool								CreateVulkanDevice();
 	bool								CreateFrameBuffers();
 	bool								CreateCommandBuffers();
-	bool								CreateGraphicsPipeline(Helper::App::ePipeline pipeline);
+	bool								CreateGraphicsPipeline(Helper::ePipeline pipeline);
 	bool								CreateRenderPass();
 
 private:
-	RenderContext*						m_pRC;
+	VulkanContext*						m_pContext;
 	VulkanDevice*						m_pVulkanDevice;
 	VulkanFrameBuffer*					m_pFrameBuffer;
 
@@ -111,5 +45,7 @@ private:
 	std::vector<VkSemaphore>			m_vkListSemaphoreImageAvailable;
 	std::vector<VkSemaphore>			m_vkListSemaphoreRenderFinished;
 	std::vector<VkFence>				m_vkListFences;
+
+	VulkanMesh*							m_pMesh;
 };
 

@@ -3,7 +3,7 @@
 #include "vulkan/vulkan.h"
 #include "Utility.h"
 
-struct  RenderContext;
+struct  VulkanContext;
 
 class VulkanFrameBuffer
 {
@@ -11,13 +11,13 @@ public:
 	VulkanFrameBuffer();
 	~VulkanFrameBuffer();
 
-	void								Cleanup(RenderContext* pRC);
-	void								CleanupOnWindowsResize(RenderContext* pRC);
-	void								HandleWindowResize(RenderContext* pRC);
-	bool								CreateFramebuffers(RenderContext* pRC);
+	void								Cleanup(VulkanContext* pRC);
+	void								CleanupOnWindowsResize(VulkanContext* pRC);
+	void								HandleWindowResize(VulkanContext* pRC);
+	bool								CreateFramebuffers(VulkanContext* pRC);
 
 
 private:
-	std::vector<Helper::Vulkan::SwapchainAttachment>	m_ListAttachments;
+	std::vector<Helper::SwapchainAttachment>	m_ListAttachments;
 };
 

@@ -3,10 +3,10 @@
 #include "VulkanRenderer.h"
 #include "VulkanSwapchain.h"
 #include "VulkanDevice.h"
-#include "Utility.h"
+#include "VulkanContext.h"
 
 //---------------------------------------------------------------------------------------------------------------------
-VulkanDevice::VulkanDevice(const RenderContext* pRC)
+VulkanDevice::VulkanDevice(const VulkanContext* pContext)
 {
 	m_pSwapchain = nullptr;
 }
@@ -18,22 +18,22 @@ VulkanDevice::~VulkanDevice()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanDevice::SetupDevice(RenderContext* pRC)
+bool VulkanDevice::SetupDevice(VulkanContext* pContext)
 {
-	CHECK(AcquirePhysicalDevice(pRC));
-	CHECK(CreateLogicalDevice(pRC));
-	CHECK(m_pSwapchain->CreateSwapchain(pRC, m_QueueFamilyIndices));
+	CHECK(AcquirePhysicalDevice(pContext));
+	CHECK(CreateLogicalDevice(pContext));
+	CHECK(m_pSwapchain->CreateSwapchain(pContext, m_QueueFamilyIndices));
 	return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanDevice::CreateCommandPool(RenderContext* pRC)
+bool VulkanDevice::CreateCommandPool(VulkanContext* pContext)
 {
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
 	
-	VK_CHECK(vkCreateCommandPool(pRC->vkDevice, &poolInfo, nullptr, &(pRC->vkGraphicsCommandPool)));
+	VK_CHECK(vkCreateCommandPool(pContext->vkDevice, &poolInfo, nullptr, &(pContext->vkGraphicsCommandPool)));
 
 	LOG_DEBUG("Graphics Command Pool created!");
 
@@ -41,19 +41,19 @@ bool VulkanDevice::CreateCommandPool(RenderContext* pRC)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanDevice::CreateCommandBuffers(RenderContext* pRC)
+bool VulkanDevice::CreateCommandBuffers(VulkanContext* pContext)
 {
 	// Make sure we have command buffer for each framebuffer!
-	pRC->vkListGraphicsCommandBuffers.resize(pRC->vkListFramebuffers.size());
+	pContext->vkListGraphicsCommandBuffers.resize(pContext->vkListFramebuffers.size());
 
 	// Allocate buffer from the Graphics command pool
 	VkCommandBufferAllocateInfo cbAllocInfo = {};
 	cbAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cbAllocInfo.commandPool = pRC->vkGraphicsCommandPool;
+	cbAllocInfo.commandPool = pContext->vkGraphicsCommandPool;
 	cbAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cbAllocInfo.commandBufferCount = static_cast<uint32_t>(pRC->vkListGraphicsCommandBuffers.size());
+	cbAllocInfo.commandBufferCount = static_cast<uint32_t>(pContext->vkListGraphicsCommandBuffers.size());
 
-	VK_CHECK(vkAllocateCommandBuffers(pRC->vkDevice, &cbAllocInfo, pRC->vkListGraphicsCommandBuffers.data()));
+	VK_CHECK(vkAllocateCommandBuffers(pContext->vkDevice, &cbAllocInfo, pContext->vkListGraphicsCommandBuffers.data()));
 
 	LOG_DEBUG("Graphics Command buffers created!");
 
@@ -64,10 +64,10 @@ bool VulkanDevice::CreateCommandBuffers(RenderContext* pRC)
 // List out all the available physical devices. Choose the one which supports required Queue families & extensions. 
 // Give preference to Discrete GPU over Integrated GPU!
 
-bool VulkanDevice::AcquirePhysicalDevice(RenderContext* pRC)
+bool VulkanDevice::AcquirePhysicalDevice(VulkanContext* pContext)
 {
 	uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(pRC->vkInst, &deviceCount, nullptr);
+	vkEnumeratePhysicalDevices(pContext->vkInst, &deviceCount, nullptr);
 
 	if (deviceCount == 0)
 	{
@@ -76,7 +76,7 @@ bool VulkanDevice::AcquirePhysicalDevice(RenderContext* pRC)
 	}		
 
 	std::vector<VkPhysicalDevice> vecDevices(deviceCount);
-	vkEnumeratePhysicalDevices(pRC->vkInst, &deviceCount, vecDevices.data());
+	vkEnumeratePhysicalDevices(pContext->vkInst, &deviceCount, vecDevices.data());
 
 	// List out all the physical devices & get their properties
 	for (uint16_t i = 0; i < deviceCount; ++i)
@@ -94,10 +94,10 @@ bool VulkanDevice::AcquirePhysicalDevice(RenderContext* pRC)
 		if (bExtensionsSupported)
 		{
 			// Fetch Queue families supported!
-			FetchQueueFamilies(vecDevices[i], pRC);
+			FetchQueueFamilies(vecDevices[i], pContext);
 
 			// Fetch if surface has required parameters to create swapchain!
-			m_pSwapchain->FetchSwapchainInfo(vecDevices[i], pRC->vkSurface);
+			m_pSwapchain->FetchSwapchainInfo(vecDevices[i], pContext->vkSurface);
 
 			if (m_QueueFamilyIndices.isComplete() && m_pSwapchain->isSwapchainValid())
 			{
@@ -106,7 +106,10 @@ bool VulkanDevice::AcquirePhysicalDevice(RenderContext* pRC)
 				// Prefer Discrete GPU over integrated one!
 				if (m_vkDeviceProps.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
 				{
-					pRC->vkPhysicalDevice = vecDevices[i];
+					pContext->vkPhysicalDevice = vecDevices[i];
+
+					// Get properties of physical device memory
+					vkGetPhysicalDeviceMemoryProperties(pContext->vkPhysicalDevice, &(pContext->vkDeviceMemoryProps));
 
 					LOG_DEBUG("{0} Selected!!", m_vkDeviceProps.deviceName);
 					LOG_INFO("---------- Device Limits ----------");
@@ -131,7 +134,7 @@ bool VulkanDevice::AcquirePhysicalDevice(RenderContext* pRC)
 	}
 
 	// If we don't find suitable device, return!
-	if (pRC->vkPhysicalDevice == VK_NULL_HANDLE)
+	if (pContext->vkPhysicalDevice == VK_NULL_HANDLE)
 	{
 		LOG_ERROR("Failed to find suitable GPU!");
 		return false;
@@ -143,7 +146,7 @@ bool VulkanDevice::AcquirePhysicalDevice(RenderContext* pRC)
 //---------------------------------------------------------------------------------------------------------------------
 // Create logical device supporting required Queues, Extensions & Device features!
 
-bool VulkanDevice::CreateLogicalDevice(RenderContext* pRC)
+bool VulkanDevice::CreateLogicalDevice(VulkanContext* pContext)
 {
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
 
@@ -174,61 +177,61 @@ bool VulkanDevice::CreateLogicalDevice(RenderContext* pRC)
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(Helper::Vulkan::g_strDeviceExtensions.size());
-	deviceCreateInfo.ppEnabledExtensionNames = Helper::Vulkan::g_strDeviceExtensions.data();
+	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(Helper::g_strDeviceExtensions.size());
+	deviceCreateInfo.ppEnabledExtensionNames = Helper::g_strDeviceExtensions.data();
 	
 	// Physical device features that logical device will use...
 	VkPhysicalDeviceFeatures deviceFeatures = {};
-	vkGetPhysicalDeviceFeatures(pRC->vkPhysicalDevice, &deviceFeatures);
+	vkGetPhysicalDeviceFeatures(pContext->vkPhysicalDevice, &deviceFeatures);
 
 	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
 	// Create logical device from the given physical device...
-	VK_CHECK(vkCreateDevice(pRC->vkPhysicalDevice, &deviceCreateInfo, nullptr, &(pRC->vkDevice)));
+	VK_CHECK(vkCreateDevice(pContext->vkPhysicalDevice, &deviceCreateInfo, nullptr, &(pContext->vkDevice)));
 
 	LOG_DEBUG("Vulkan Logical device created!");
 
 	// Queues are created at the same time as device creation, store their handle!
-	vkGetDeviceQueue(pRC->vkDevice, m_QueueFamilyIndices.graphicsFamily.value(), 0, &(pRC->vkQueueGraphics));
-	vkGetDeviceQueue(pRC->vkDevice, m_QueueFamilyIndices.presentFamily.value(), 0, &(pRC->vkQueuePresent));
+	vkGetDeviceQueue(pContext->vkDevice, m_QueueFamilyIndices.graphicsFamily.value(), 0, &(pContext->vkQueueGraphics));
+	vkGetDeviceQueue(pContext->vkDevice, m_QueueFamilyIndices.presentFamily.value(), 0, &(pContext->vkQueuePresent));
 
 	return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanDevice::Cleanup(RenderContext* pRC)
+void VulkanDevice::Cleanup(VulkanContext* pContext)
 {
-	vkFreeCommandBuffers(pRC->vkDevice, pRC->vkGraphicsCommandPool,
-						static_cast<uint32_t>(pRC->vkListGraphicsCommandBuffers.size()),
-						pRC->vkListGraphicsCommandBuffers.data());
-	vkDestroyCommandPool(pRC->vkDevice, pRC->vkGraphicsCommandPool, nullptr);
-	m_pSwapchain->Cleanup(pRC);
-	vkDestroyDevice(pRC->vkDevice, nullptr);
+	vkFreeCommandBuffers(pContext->vkDevice, pContext->vkGraphicsCommandPool,
+						static_cast<uint32_t>(pContext->vkListGraphicsCommandBuffers.size()),
+						pContext->vkListGraphicsCommandBuffers.data());
+	vkDestroyCommandPool(pContext->vkDevice, pContext->vkGraphicsCommandPool, nullptr);
+	m_pSwapchain->Cleanup(pContext);
+	vkDestroyDevice(pContext->vkDevice, nullptr);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanDevice::CleanupOnWindowsResize(RenderContext* pRC)
+void VulkanDevice::CleanupOnWindowsResize(VulkanContext* pContext)
 {
-	m_pSwapchain->CleanupOnWindowsResize(pRC);
+	m_pSwapchain->CleanupOnWindowsResize(pContext);
 
 	// clean-up existing command buffer & reuse existing pool to allocate new command buffers instead of recreating it!
-	vkFreeCommandBuffers(pRC->vkDevice, pRC->vkGraphicsCommandPool, 
-						static_cast<uint32_t>(pRC->vkListGraphicsCommandBuffers.size()), 
-						pRC->vkListGraphicsCommandBuffers.data());
+	vkFreeCommandBuffers(pContext->vkDevice, pContext->vkGraphicsCommandPool, 
+						static_cast<uint32_t>(pContext->vkListGraphicsCommandBuffers.size()), 
+						pContext->vkListGraphicsCommandBuffers.data());
 
 	LOG_DEBUG("Vulkan Device Cleanup on Windows resize");
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanDevice::HandleWindowsResize(RenderContext* pRC)
+void VulkanDevice::HandleWindowsResize(VulkanContext* pContext)
 {
-	m_pSwapchain->CreateSwapchain(pRC, m_QueueFamilyIndices);
+	m_pSwapchain->CreateSwapchain(pContext, m_QueueFamilyIndices);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 // For a given physical device, checks if it has Queue families which support Graphics & Present family queues!
 
-void VulkanDevice::FetchQueueFamilies(VkPhysicalDevice physicalDevice, const RenderContext* pRC)
+void VulkanDevice::FetchQueueFamilies(VkPhysicalDevice physicalDevice, const VulkanContext* pContext)
 {
 	// Get all queue families & their properties supported by physical device!
 	uint32_t queueFamilyCount = 0;
@@ -247,7 +250,7 @@ void VulkanDevice::FetchQueueFamilies(VkPhysicalDevice physicalDevice, const Ren
 
 		// check if this queue family has capability of presenting to our window surface!
 		VkBool32 bPresentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, pRC->vkSurface, &bPresentSupport);
+		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, pContext->vkSurface, &bPresentSupport);
 
 		// if yes, store presentation family queue index!
 		if (bPresentSupport)
@@ -272,18 +275,18 @@ bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
 	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, m_vecSupportedExtensions.data());
 
 	// Compare Required extensions with supported extensions...
-	for (int i = 0; i < Helper::Vulkan::g_strDeviceExtensions.size(); ++i)
+	for (int i = 0; i < Helper::g_strDeviceExtensions.size(); ++i)
 	{
 		bool bExtensionFound = false;
 
 		for (int j = 0; j < extensionCount; ++j)
 		{
 			// If device supported extensions matches the one we want, good news ... Enumarate them!
-			if (strcmp(Helper::Vulkan::g_strDeviceExtensions[i], m_vecSupportedExtensions[j].extensionName) == 0)
+			if (strcmp(Helper::g_strDeviceExtensions[i], m_vecSupportedExtensions[j].extensionName) == 0)
 			{
 				bExtensionFound = true;
 
-				std::string msg = std::string(Helper::Vulkan::g_strDeviceExtensions[i]) + " device extension found!";
+				std::string msg = std::string(Helper::g_strDeviceExtensions[i]) + " device extension found!";
 				LOG_DEBUG(msg.c_str());
 
 				break;

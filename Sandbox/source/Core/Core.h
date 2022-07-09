@@ -34,7 +34,7 @@ template<typename T> void SAFE_DELETE(T*& a)
 {																						\
 	if (x != VK_SUCCESS)																\
 	{																					\
-		LOG_ERROR("Detected Vulkan Error at {}:{}", __FILE__, __LINE__);		\
+		LOG_ERROR("Detected Vulkan Error at {0}:{1}", __FILE__, __LINE__);				\
 		return false;																	\
 	}																					\
 }																						\

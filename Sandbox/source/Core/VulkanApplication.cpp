@@ -50,7 +50,7 @@ void VulkanApplication::Cleanup()
 {
 	m_pVulkanRenderer->Cleanup();
 
-	if (Helper::Vulkan::g_bEnableValidationLayer)
+	if (Helper::g_bEnableValidationLayer)
 	{
 		DestroyDebugUtilsMessengerEXT(m_vkInstance, m_vkDebugMessenger, nullptr);
 	}
@@ -77,7 +77,7 @@ bool VulkanApplication::CreateInstance()
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&instanceExtnCount);
 	std::vector<const char*> vecExtensions(glfwExtensions, glfwExtensions + instanceExtnCount);
 
-	if (Helper::Vulkan::g_bEnableValidationLayer)
+	if (Helper::g_bEnableValidationLayer)
 	{
 		// Add this to required application extensions!
 		vecExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -103,10 +103,10 @@ bool VulkanApplication::CreateInstance()
 	instCreateInfo.ppEnabledExtensionNames = vecExtensions.data();
 
 	VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
-	if (Helper::Vulkan::g_bEnableValidationLayer)
+	if (Helper::g_bEnableValidationLayer)
 	{
-		instCreateInfo.enabledLayerCount = static_cast<uint32_t>(Helper::Vulkan::g_strValidationLayers.size());
-		instCreateInfo.ppEnabledLayerNames = Helper::Vulkan::g_strValidationLayers.data();
+		instCreateInfo.enabledLayerCount = static_cast<uint32_t>(Helper::g_strValidationLayers.size());
+		instCreateInfo.ppEnabledLayerNames = Helper::g_strValidationLayers.data();
 
 		PopulateDebugMessengerCreateInfo(createInfo);
 		instCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&createInfo;
@@ -128,7 +128,7 @@ bool VulkanApplication::CreateInstance()
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanApplication::SetupDebugMessenger()
 {
-	if (!Helper::Vulkan::g_bEnableValidationLayer)
+	if (!Helper::g_bEnableValidationLayer)
 		return false;
 
 	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
@@ -143,7 +143,7 @@ bool VulkanApplication::SetupDebugMessenger()
 bool VulkanApplication::RunShaderCompiler(const std::string& directoryPath)
 {
 	// First check if shader compiler exists at the path mentioned?
-	std::filesystem::path compilerPath(Helper::App::gShaderCompilerPath);
+	std::filesystem::path compilerPath(Helper::gShaderCompilerPath);
 
 	if (std::filesystem::exists(compilerPath))
 	{
@@ -152,7 +152,7 @@ bool VulkanApplication::RunShaderCompiler(const std::string& directoryPath)
 			if (entry.is_regular_file() &&
 				(entry.path().extension().string() == ".vert" || entry.path().extension().string() == ".frag"))
 			{
-				std::string cmd = Helper::App::gShaderCompilerPath + " --target-env=vulkan1.3" + " -c" + " " + entry.path().string() + " -o " + entry.path().string() + ".spv";
+				std::string cmd = Helper::gShaderCompilerPath + " --target-env=vulkan1.3" + " -c" + " " + entry.path().string() + " -o " + entry.path().string() + ".spv";
 				LOG_DEBUG("Compiling shader " + entry.path().filename().string());
 				std::system(cmd.c_str());
 			}
@@ -241,15 +241,15 @@ bool VulkanApplication::CheckValidationLayerSupport()
 	// Try to see if requested enumeration layers [in Helper.h] is present in available 
 	// validation layers. 
 	bool layerFound = false;
-	for (int i = 0; i < Helper::Vulkan::g_strValidationLayers.size(); ++i)
+	for (int i = 0; i < Helper::g_strValidationLayers.size(); ++i)
 	{
 		for (int j = 0; j < layerCount; ++j)
 		{
-			if (strcmp(Helper::Vulkan::g_strValidationLayers[i], vecAvailableLayers[j].layerName) == 0)
+			if (strcmp(Helper::g_strValidationLayers[i], vecAvailableLayers[j].layerName) == 0)
 			{
 				layerFound = true;
 
-				std::string msg = std::string(Helper::Vulkan::g_strValidationLayers[i]) + " validation layer found!";
+				std::string msg = std::string(Helper::g_strValidationLayers[i]) + " validation layer found!";
 				LOG_DEBUG(msg.c_str());
 			}
 		}

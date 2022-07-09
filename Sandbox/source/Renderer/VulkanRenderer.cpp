@@ -2,54 +2,61 @@
 #include "VulkanRenderer.h"
 #include "VulkanDevice.h"
 #include "VulkanFrameBuffer.h"
+#include "VulkanContext.h"
+#include "Renderables/VulkanMesh.h"
 #include "Core/Core.h"
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanRenderer::VulkanRenderer()
 {
-	m_pRC = new RenderContext();
+	m_pContext = new VulkanContext();
 	m_pVulkanDevice = nullptr;
 	m_pFrameBuffer = nullptr;
 
 	m_uiCurrentFrame = 0;
+
+	m_pMesh = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanRenderer::~VulkanRenderer()
 {
+	SAFE_DELETE(m_pMesh);
 	SAFE_DELETE(m_pFrameBuffer);
 	SAFE_DELETE(m_pVulkanDevice);
-	SAFE_DELETE(m_pRC);
+	SAFE_DELETE(m_pContext);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::Cleanup()
 {
-	vkDeviceWaitIdle(m_pRC->vkDevice);
+	vkDeviceWaitIdle(m_pContext->vkDevice);
+
+	m_pMesh->Cleanup(m_pContext);
 	
-	for (uint16_t i = 0; i < Helper::App::gMaxFramesDraws; i++)
+	for (uint16_t i = 0; i < Helper::gMaxFramesDraws; i++)
 	{
-		vkDestroySemaphore(m_pRC->vkDevice, m_vkListSemaphoreImageAvailable[i], nullptr);
-		vkDestroySemaphore(m_pRC->vkDevice, m_vkListSemaphoreRenderFinished[i], nullptr);
-		vkDestroyFence(m_pRC->vkDevice, m_vkListFences[i], nullptr);
+		vkDestroySemaphore(m_pContext->vkDevice, m_vkListSemaphoreImageAvailable[i], nullptr);
+		vkDestroySemaphore(m_pContext->vkDevice, m_vkListSemaphoreRenderFinished[i], nullptr);
+		vkDestroyFence(m_pContext->vkDevice, m_vkListFences[i], nullptr);
 	}
 
-	vkDestroyPipeline(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipeline, nullptr);
-	vkDestroyPipelineLayout(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipelineLayout, nullptr);
+	vkDestroyPipeline(m_pContext->vkDevice, m_pContext->vkForwardRenderingPipeline, nullptr);
+	vkDestroyPipelineLayout(m_pContext->vkDevice, m_pContext->vkForwardRenderingPipelineLayout, nullptr);
 
-	m_pFrameBuffer->Cleanup(m_pRC);
+	m_pFrameBuffer->Cleanup(m_pContext);
 
-	vkDestroyRenderPass(m_pRC->vkDevice, m_pRC->vkForwardRenderingRenderPass, nullptr);
+	vkDestroyRenderPass(m_pContext->vkDevice, m_pContext->vkForwardRenderingRenderPass, nullptr);
 	
-	vkDestroySurfaceKHR(m_pRC->vkInst, m_pRC->vkSurface, nullptr);
-	m_pVulkanDevice->Cleanup(m_pRC);
+	vkDestroySurfaceKHR(m_pContext->vkInst, m_pContext->vkSurface, nullptr);
+	m_pVulkanDevice->Cleanup(m_pContext);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanRenderer::CreateVulkanDevice()
 {
-	m_pVulkanDevice = new VulkanDevice(m_pRC);
-	CHECK(m_pVulkanDevice->SetupDevice(m_pRC));
+	m_pVulkanDevice = new VulkanDevice(m_pContext);
+	CHECK(m_pVulkanDevice->SetupDevice(m_pContext));
 
 	return true;
 }
@@ -58,7 +65,7 @@ bool VulkanRenderer::CreateVulkanDevice()
 bool VulkanRenderer::CreateFrameBuffers()
 {
 	m_pFrameBuffer = new VulkanFrameBuffer();
-	CHECK(m_pFrameBuffer->CreateFramebuffers(m_pRC));
+	CHECK(m_pFrameBuffer->CreateFramebuffers(m_pContext));
 	
 	return true;
 }
@@ -66,8 +73,8 @@ bool VulkanRenderer::CreateFrameBuffers()
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanRenderer::CreateCommandBuffers()
 {	
-	CHECK(m_pVulkanDevice->CreateCommandPool(m_pRC));
-	CHECK(m_pVulkanDevice->CreateCommandBuffers(m_pRC));
+	CHECK(m_pVulkanDevice->CreateCommandPool(m_pContext));
+	CHECK(m_pVulkanDevice->CreateCommandBuffers(m_pContext));
 	
 	return true;
 }
@@ -75,17 +82,29 @@ bool VulkanRenderer::CreateCommandBuffers()
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 {
-	m_pRC->vkInst = instance;
-	m_pRC->pWindow = pWindow;
+	m_pContext->vkInst = instance;
+	m_pContext->pWindow = pWindow;
 
 	// Create surface
-	VK_CHECK(glfwCreateWindowSurface(instance, pWindow, nullptr, &(m_pRC->vkSurface)));
+	VK_CHECK(glfwCreateWindowSurface(instance, pWindow, nullptr, &(m_pContext->vkSurface)));
 
 	CHECK(CreateVulkanDevice());
+
 	CHECK(CreateRenderPass());
 	CHECK(CreateFrameBuffers());
-	CHECK(CreateGraphicsPipeline(Helper::App::FORWARD));
+	CHECK(CreateGraphicsPipeline(Helper::FORWARD));
 	CHECK(CreateCommandBuffers());
+
+	// Create Mesh
+	std::vector<Helper::VertexP> vertices =
+	{
+		{{0.0f, -0.4f, 0.0f}},
+		{{0.4f, 0.4f, 0.0f}},
+		{{-0.4f, 0.4f, 0.0f}}
+	};
+
+	m_pMesh = new VulkanMesh(m_pContext, vertices);
+
 	CHECK(RecordCommands());
 	CHECK(CreateSynchronization());
 }
@@ -101,12 +120,12 @@ void VulkanRenderer::Render()
 {
 	// -- GET NEXT IMAGE
 	// 
-	vkWaitForFences(m_pRC->vkDevice, 1, &m_vkListFences[m_uiCurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-	vkResetFences(m_pRC->vkDevice, 1, &m_vkListFences[m_uiCurrentFrame]);
+	vkWaitForFences(m_pContext->vkDevice, 1, &m_vkListFences[m_uiCurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	vkResetFences(m_pContext->vkDevice, 1, &m_vkListFences[m_uiCurrentFrame]);
 
 	// Get index of next image to be drawn to & signal semaphore when ready to be drawn to!
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(	m_pRC->vkDevice, m_pRC->vkSwapchain, std::numeric_limits<uint64_t>::max(), 
+	VkResult result = vkAcquireNextImageKHR(	m_pContext->vkDevice, m_pContext->vkSwapchain, std::numeric_limits<uint64_t>::max(), 
 												m_vkListSemaphoreImageAvailable[m_uiCurrentFrame],
 												VK_NULL_HANDLE, &imageIndex);
 
@@ -145,12 +164,12 @@ void VulkanRenderer::Render()
 
 	submitInfo.pWaitDstStageMask = waitStages.data();
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &(m_pRC->vkListGraphicsCommandBuffers[imageIndex]);
+	submitInfo.pCommandBuffers = &(m_pContext->vkListGraphicsCommandBuffers[imageIndex]);
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &(m_vkListSemaphoreRenderFinished[m_uiCurrentFrame]);					// semaphores to SIGNAL
 	
 	// Submit the command buffer to Graphics Queue!
-	result = vkQueueSubmit(m_pRC->vkQueueGraphics, 1, &submitInfo, m_vkListFences[m_uiCurrentFrame]);
+	result = vkQueueSubmit(m_pContext->vkQueueGraphics, 1, &submitInfo, m_vkListFences[m_uiCurrentFrame]);
 	if (result != VK_SUCCESS)
 	{
 		LOG_ERROR("Failed to submit Command buffer to Queue!");
@@ -163,44 +182,44 @@ void VulkanRenderer::Render()
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = &(m_vkListSemaphoreRenderFinished[m_uiCurrentFrame]);
 	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &(m_pRC->vkSwapchain);
+	presentInfo.pSwapchains = &(m_pContext->vkSwapchain);
 	presentInfo.pImageIndices = &imageIndex;
 
-	result = vkQueuePresentKHR(m_pRC->vkQueuePresent, &presentInfo);
+	result = vkQueuePresentKHR(m_pContext->vkQueuePresent, &presentInfo);
 	if (result != VK_SUCCESS)
 	{
 		LOG_ERROR("Failed to Present Image!");
 		return;
 	}
 
-	m_uiCurrentFrame = (m_uiCurrentFrame + 1) % Helper::App::gMaxFramesDraws;
+	m_uiCurrentFrame = (m_uiCurrentFrame + 1) % Helper::gMaxFramesDraws;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::CleanupOnWindowsResize()
 {
-	vkDestroyPipeline(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipeline, nullptr);
-	vkDestroyPipelineLayout(m_pRC->vkDevice, m_pRC->vkForwardRenderingPipelineLayout, nullptr);
+	vkDestroyPipeline(m_pContext->vkDevice, m_pContext->vkForwardRenderingPipeline, nullptr);
+	vkDestroyPipelineLayout(m_pContext->vkDevice, m_pContext->vkForwardRenderingPipelineLayout, nullptr);
 
-	vkDestroyRenderPass(m_pRC->vkDevice, m_pRC->vkForwardRenderingRenderPass, nullptr);
+	vkDestroyRenderPass(m_pContext->vkDevice, m_pContext->vkForwardRenderingRenderPass, nullptr);
 
-	m_pFrameBuffer->CleanupOnWindowsResize(m_pRC);
-	m_pVulkanDevice->CleanupOnWindowsResize(m_pRC);
+	m_pFrameBuffer->CleanupOnWindowsResize(m_pContext);
+	m_pVulkanDevice->CleanupOnWindowsResize(m_pContext);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::HandleWindowsResize()
 {
 	int width = 0, height = 0;
-	glfwGetFramebufferSize(m_pRC->pWindow, &width, &height);
+	glfwGetFramebufferSize(m_pContext->pWindow, &width, &height);
 	while (width == 0 || height == 0)
 	{
-		glfwGetFramebufferSize(m_pRC->pWindow, &width, &height);
+		glfwGetFramebufferSize(m_pContext->pWindow, &width, &height);
 		glfwWaitEvents();
 	}
 
 	// we shouldn't touch resources that are still in use!
-	vkDeviceWaitIdle(m_pRC->vkDevice);
+	vkDeviceWaitIdle(m_pContext->vkDevice);
 
 	// Perform cleanup on old version
 	CleanupOnWindowsResize();
@@ -208,13 +227,13 @@ void VulkanRenderer::HandleWindowsResize()
 	// Recreate...! 
 	LOG_DEBUG("Starting to Handle windows resize...");
 
-	m_pVulkanDevice->HandleWindowsResize(m_pRC);
+	m_pVulkanDevice->HandleWindowsResize(m_pContext);
 	CreateRenderPass();
-	CreateGraphicsPipeline(Helper::App::FORWARD);
+	CreateGraphicsPipeline(Helper::FORWARD);
 
-	m_pFrameBuffer->HandleWindowResize(m_pRC);
+	m_pFrameBuffer->HandleWindowResize(m_pContext);
 	
-	m_pVulkanDevice->CreateCommandBuffers(m_pRC);
+	m_pVulkanDevice->CreateCommandBuffers(m_pContext);
 
 	LOG_DEBUG("Windows resized handled gracefully!");
 }
@@ -229,9 +248,9 @@ bool VulkanRenderer::RecordCommands()
 	// Information about how to begin the render pass
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassBeginInfo.renderPass = m_pRC->vkForwardRenderingRenderPass;
+	renderPassBeginInfo.renderPass = m_pContext->vkForwardRenderingRenderPass;
 	renderPassBeginInfo.renderArea.offset = { 0, 0 };
-	renderPassBeginInfo.renderArea.extent = m_pRC->vkSwapchainExtent;
+	renderPassBeginInfo.renderArea.extent = m_pContext->vkSwapchainExtent;
 
 	std::array<VkClearValue, 1> clearValues =
 	{
@@ -241,27 +260,31 @@ bool VulkanRenderer::RecordCommands()
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassBeginInfo.pClearValues = clearValues.data();
 	
-	for(uint32_t i = 0; i < m_pRC->vkListGraphicsCommandBuffers.size(); i++)
+	for(uint32_t i = 0; i < m_pContext->vkListGraphicsCommandBuffers.size(); i++)
 	{
-		renderPassBeginInfo.framebuffer = m_pRC->vkListFramebuffers[i];
+		renderPassBeginInfo.framebuffer = m_pContext->vkListFramebuffers[i];
 
 		// start recording...
-		VK_CHECK(vkBeginCommandBuffer(m_pRC->vkListGraphicsCommandBuffers[i], &cmdBufferBeginInfo));
+		VK_CHECK(vkBeginCommandBuffer(m_pContext->vkListGraphicsCommandBuffers[i], &cmdBufferBeginInfo));
 
 		// Begin RenderPass
-		vkCmdBeginRenderPass(m_pRC->vkListGraphicsCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(m_pContext->vkListGraphicsCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		// Bind pipeline to be used in RenderPass
-		vkCmdBindPipeline(m_pRC->vkListGraphicsCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pRC->vkForwardRenderingPipeline);
+		vkCmdBindPipeline(m_pContext->vkListGraphicsCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pContext->vkForwardRenderingPipeline);
+
+		VkBuffer vertexBuffers[] = { m_pMesh->m_vkVertexBuffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(m_pContext->vkListGraphicsCommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
 		// Execute
-		vkCmdDraw(m_pRC->vkListGraphicsCommandBuffers[i], 3, 1, 0, 0);
+		vkCmdDraw(m_pContext->vkListGraphicsCommandBuffers[i], static_cast<uint32_t>(m_pMesh->m_uiVertexCount), 1, 0, 0);
 
 		// End RenderPass
-		vkCmdEndRenderPass(m_pRC->vkListGraphicsCommandBuffers[i]);
+		vkCmdEndRenderPass(m_pContext->vkListGraphicsCommandBuffers[i]);
 
 		// end recording...
-		VK_CHECK(vkEndCommandBuffer(m_pRC->vkListGraphicsCommandBuffers[i]));
+		VK_CHECK(vkEndCommandBuffer(m_pContext->vkListGraphicsCommandBuffers[i]));
 
 		LOG_INFO("Framebuffer{0} command recorded", i);
 	}
@@ -270,9 +293,9 @@ bool VulkanRenderer::RecordCommands()
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanRenderer::CreateSynchronization()
 {
-	m_vkListSemaphoreImageAvailable.resize(Helper::App::gMaxFramesDraws);
-	m_vkListSemaphoreRenderFinished.resize(Helper::App::gMaxFramesDraws);
-	m_vkListFences.resize(Helper::App::gMaxFramesDraws);
+	m_vkListSemaphoreImageAvailable.resize(Helper::gMaxFramesDraws);
+	m_vkListSemaphoreRenderFinished.resize(Helper::gMaxFramesDraws);
+	m_vkListFences.resize(Helper::gMaxFramesDraws);
 
 	// Semaphore creation info
 	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
@@ -283,11 +306,11 @@ bool VulkanRenderer::CreateSynchronization()
 	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	for (uint16_t i = 0; i < Helper::App::gMaxFramesDraws; i++)
+	for (uint16_t i = 0; i < Helper::gMaxFramesDraws; i++)
 	{
-		VK_CHECK(vkCreateSemaphore(m_pRC->vkDevice, &semaphoreCreateInfo, nullptr, &(m_vkListSemaphoreImageAvailable[i])));
-		VK_CHECK(vkCreateSemaphore(m_pRC->vkDevice, &semaphoreCreateInfo, nullptr, &(m_vkListSemaphoreRenderFinished[i])));
-		VK_CHECK(vkCreateFence(m_pRC->vkDevice, &fenceCreateInfo, nullptr, &(m_vkListFences[i])));
+		VK_CHECK(vkCreateSemaphore(m_pContext->vkDevice, &semaphoreCreateInfo, nullptr, &(m_vkListSemaphoreImageAvailable[i])));
+		VK_CHECK(vkCreateSemaphore(m_pContext->vkDevice, &semaphoreCreateInfo, nullptr, &(m_vkListSemaphoreRenderFinished[i])));
+		VK_CHECK(vkCreateFence(m_pContext->vkDevice, &fenceCreateInfo, nullptr, &(m_vkListFences[i])));
 	}
 	
 
@@ -295,15 +318,15 @@ bool VulkanRenderer::CreateSynchronization()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanRenderer::CreateGraphicsPipeline(Helper::App::ePipeline pipeline)
+bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 {
 	switch (pipeline)
 	{
-		case Helper::App::FORWARD:
+		case Helper::FORWARD:
 		{
 			// Read shader code & create modules
-			VkShaderModule vsModule = Helper::Vulkan::CreateShaderModule(m_pRC->vkDevice, "Assets/Shaders/triangle.vert.spv");
-			VkShaderModule fsModule = Helper::Vulkan::CreateShaderModule(m_pRC->vkDevice, "Assets/Shaders/triangle.frag.spv");
+			VkShaderModule vsModule = m_pContext->CreateShaderModule("Assets/Shaders/triangle.vert.spv");
+			VkShaderModule fsModule = m_pContext->CreateShaderModule("Assets/Shaders/triangle.frag.spv");
 
 			// Vertex Shader stage creation info
 			VkPipelineShaderStageCreateInfo vsCreateInfo = {};
@@ -321,13 +344,27 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::App::ePipeline pipeline)
 
 			std::array<VkPipelineShaderStageCreateInfo, 2> arrShaderStages = { vsCreateInfo, fsCreateInfo };
 
+			// How the data for a single vertex is as a whole!
+			VkVertexInputBindingDescription inputBindingDesc = {};
+			inputBindingDesc.binding = 0;
+			inputBindingDesc.stride = sizeof(Helper::VertexP);
+			inputBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+			std::array<VkVertexInputAttributeDescription, 1> attrDesc = {};
+
+			// Position
+			attrDesc[0].binding = 0;
+			attrDesc[0].location = 0;
+			attrDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrDesc[0].offset = offsetof(Helper::VertexP, Position);
+
 			// Vertex Input (TODO)
 			VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
 			vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-			vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-			vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
-			vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
-			vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
+			vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attrDesc.size());
+			vertexInputCreateInfo.pVertexAttributeDescriptions = attrDesc.data();
+			vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
+			vertexInputCreateInfo.pVertexBindingDescriptions = &inputBindingDesc;
 			
 			// Input Assembly
 			VkPipelineInputAssemblyStateCreateInfo inputASCreateInfo = {};
@@ -339,14 +376,14 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::App::ePipeline pipeline)
 			VkViewport vp = {};
 			vp.x = 0.0f;
 			vp.y = 0.0f;
-			vp.width = static_cast<float>(m_pRC->vkSwapchainExtent.width);
-			vp.height = static_cast<float>(m_pRC->vkSwapchainExtent.height);
+			vp.width = static_cast<float>(m_pContext->vkSwapchainExtent.width);
+			vp.height = static_cast<float>(m_pContext->vkSwapchainExtent.height);
 			vp.maxDepth = 1.0f;
 			vp.minDepth = 0.0f;
 
 			VkRect2D scissor = {};
 			scissor.offset = { 0, 0 };
-			scissor.extent = m_pRC->vkSwapchainExtent;
+			scissor.extent = m_pContext->vkSwapchainExtent;
 
 			VkPipelineViewportStateCreateInfo vpCreateInfo = {};
 			vpCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -407,7 +444,7 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::App::ePipeline pipeline)
 			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 			pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-			VK_CHECK(vkCreatePipelineLayout(m_pRC->vkDevice, &pipelineLayoutCreateInfo, nullptr, &(m_pRC->vkForwardRenderingPipelineLayout)));
+			VK_CHECK(vkCreatePipelineLayout(m_pContext->vkDevice, &pipelineLayoutCreateInfo, nullptr, &(m_pContext->vkForwardRenderingPipelineLayout)));
 
 			// TODO (Setup Depth Stencil testing)
 
@@ -423,20 +460,20 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::App::ePipeline pipeline)
 			forwardRenderingPipelineInfo.pMultisampleState = &msCreateInfo;
 			forwardRenderingPipelineInfo.pColorBlendState = &colorBlendCreateInfo;
 			forwardRenderingPipelineInfo.pDepthStencilState = nullptr;
-			forwardRenderingPipelineInfo.layout = m_pRC->vkForwardRenderingPipelineLayout;
-			forwardRenderingPipelineInfo.renderPass = m_pRC->vkForwardRenderingRenderPass;
+			forwardRenderingPipelineInfo.layout = m_pContext->vkForwardRenderingPipelineLayout;
+			forwardRenderingPipelineInfo.renderPass = m_pContext->vkForwardRenderingRenderPass;
 			forwardRenderingPipelineInfo.subpass = 0;
 			forwardRenderingPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 			forwardRenderingPipelineInfo.basePipelineIndex = -1;
 
 			//--  Create Graphics Pipeline!!
-			VK_CHECK(vkCreateGraphicsPipelines(m_pRC->vkDevice, VK_NULL_HANDLE, 1, &forwardRenderingPipelineInfo, nullptr, &(m_pRC->vkForwardRenderingPipeline)));
+			VK_CHECK(vkCreateGraphicsPipelines(m_pContext->vkDevice, VK_NULL_HANDLE, 1, &forwardRenderingPipelineInfo, nullptr, &(m_pContext->vkForwardRenderingPipeline)));
 
 			LOG_DEBUG("Forward Graphics Pipeline created!");
 
 			// Destroy shader module
-			vkDestroyShaderModule(m_pRC->vkDevice, fsModule, nullptr);
-			vkDestroyShaderModule(m_pRC->vkDevice, vsModule, nullptr);
+			vkDestroyShaderModule(m_pContext->vkDevice, fsModule, nullptr);
+			vkDestroyShaderModule(m_pContext->vkDevice, vsModule, nullptr);
 
 			break;
 		}
@@ -453,7 +490,7 @@ bool VulkanRenderer::CreateRenderPass()
 {
 	// Color attachment of render pass
 	VkAttachmentDescription colorAttachment = {};
-	colorAttachment.format = m_pRC->vkSwapchainImageFormat;
+	colorAttachment.format = m_pContext->vkSwapchainImageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -501,7 +538,7 @@ bool VulkanRenderer::CreateRenderPass()
 	renderpassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependencies.size());
 	renderpassCreateInfo.pDependencies = subpassDependencies.data();
 
-	VK_CHECK(vkCreateRenderPass(m_pRC->vkDevice, &renderpassCreateInfo, nullptr, &m_pRC->vkForwardRenderingRenderPass));
+	VK_CHECK(vkCreateRenderPass(m_pContext->vkDevice, &renderpassCreateInfo, nullptr, &m_pContext->vkForwardRenderingRenderPass));
 
 	LOG_DEBUG("Forward RenderPass Created!");
 

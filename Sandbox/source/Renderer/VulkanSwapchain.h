@@ -6,7 +6,7 @@
 #include "vulkan/vulkan.h"
 #include "VulkanDevice.h"
 
-struct RenderContext;
+struct VulkanContext;
 
 //---------------------------------------------------------------------------------------------------------------------
 struct SwapchainInfo
@@ -25,11 +25,11 @@ public:
 	VulkanSwapchain();
 	~VulkanSwapchain();
 
-	void								Cleanup(const RenderContext* pRC);
-	void								CleanupOnWindowsResize(const RenderContext* pRC);
-	void								HandleWindowsResize(RenderContext* pRC);
+	void								Cleanup(VulkanContext* pContext);
+	void								CleanupOnWindowsResize(VulkanContext* pContext);
+	void								HandleWindowsResize(VulkanContext* pContext);
 
-	bool								CreateSwapchain(RenderContext* pRC, const QueueFamilyIndices& queueFamilyIndices);
+	bool								CreateSwapchain(VulkanContext* pContext, const QueueFamilyIndices& queueFamilyIndices);
 	void								FetchSwapchainInfo(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 	inline bool							isSwapchainValid() const { return m_SwapchainInfo.isValid(); } 
@@ -37,7 +37,7 @@ public:
 private:
 	VkSurfaceFormatKHR					ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
 	VkPresentModeKHR					ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-	VkExtent2D							ChooseSwapExtent(const RenderContext* pRC);
+	VkExtent2D							ChooseSwapExtent(const VulkanContext* pContext);
 
 private:
 	uint32_t							m_uiImageCount;

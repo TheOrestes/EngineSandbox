@@ -2,7 +2,7 @@
 
 #include "vulkan/vulkan.h"
 
-struct RenderContext;
+struct VulkanContext;
 class VulkanSwapchain;
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -24,20 +24,20 @@ struct QueueFamilyIndices
 class VulkanDevice
 {
 public:
-	VulkanDevice(const RenderContext* pRC);
+	VulkanDevice(const VulkanContext* pRC);
 	~VulkanDevice();
 
-	bool								SetupDevice(RenderContext* pRC);
-	bool								CreateCommandPool(RenderContext* pRC);
-	bool								CreateCommandBuffers(RenderContext* pRC);
-	void								HandleWindowsResize(RenderContext* pRC);
-	void								Cleanup(RenderContext* pRC);
-	void								CleanupOnWindowsResize(RenderContext* pRC);
+	bool								SetupDevice(VulkanContext* pRC);
+	bool								CreateCommandPool(VulkanContext* pRC);
+	bool								CreateCommandBuffers(VulkanContext* pRC);
+	void								HandleWindowsResize(VulkanContext* pRC);
+	void								Cleanup(VulkanContext* pRC);
+	void								CleanupOnWindowsResize(VulkanContext* pRC);
 
 private:
-	bool								AcquirePhysicalDevice(RenderContext* pRC);
-	bool								CreateLogicalDevice(RenderContext* pRC);
-	void								FetchQueueFamilies(VkPhysicalDevice physicalDevice, const RenderContext* pRC);
+	bool								AcquirePhysicalDevice(VulkanContext* pRC);
+	bool								CreateLogicalDevice(VulkanContext* pRC);
+	void								FetchQueueFamilies(VkPhysicalDevice physicalDevice, const VulkanContext* pRC);
 	bool								CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
 
 private:
