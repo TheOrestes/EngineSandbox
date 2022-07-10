@@ -8,7 +8,7 @@ VulkanMesh::~VulkanMesh()
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-VulkanMesh::VulkanMesh(const VulkanContext* pContext, const std::vector<Helper::VertexP>& vertices)
+VulkanMesh::VulkanMesh(const VulkanContext* pContext, const std::vector<Helper::VertexPC>& vertices)
 {
 	m_uiVertexCount = vertices.size();
 
@@ -23,10 +23,10 @@ void VulkanMesh::Cleanup(VulkanContext* pContext)
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-void VulkanMesh::CreateVertexBuffer(const VulkanContext* pContext, const std::vector<Helper::VertexP>& vertices)
+void VulkanMesh::CreateVertexBuffer(const VulkanContext* pContext, const std::vector<Helper::VertexPC>& vertices)
 {
 	// Get the size of buffer needed for vertices
-	VkDeviceSize bufferSize = m_uiVertexCount * sizeof(Helper::VertexP);
+	VkDeviceSize bufferSize = m_uiVertexCount * sizeof(Helper::VertexPC);
 
 	// Temp buffer to "stage" vertex data before transferring to GPU memory!
 	VkBuffer stagingBuffer;

@@ -48,12 +48,13 @@ namespace Helper
 	//-----------------------------------------------------------------------------------------------------------------------
 	// VERTEX STRUCTURES
 
-	struct VertexP
+	struct VertexPC
 	{
-		VertexP() : Position(glm::vec3(0)) {}
-		VertexP(const glm::vec3& pos) : Position(pos) {}
+		VertexPC() : Position(glm::vec3(0)), Color(glm::vec3(1)) {}
+		VertexPC(const glm::vec3& pos, const glm::vec3& col) : Position(pos), Color(col) {}
 
 		glm::vec3 Position;
+		glm::vec3 Color;
 	};
 }
 

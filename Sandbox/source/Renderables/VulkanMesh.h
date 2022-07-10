@@ -9,7 +9,7 @@ class VulkanMesh
 {
 public:
 	VulkanMesh() : m_uiVertexCount(0), m_vkVertexBuffer(VK_NULL_HANDLE) {}
-	VulkanMesh(const VulkanContext* pRC, const std::vector<Helper::VertexP>& vertices);
+	VulkanMesh(const VulkanContext* pRC, const std::vector<Helper::VertexPC>& vertices);
 
 	void		Cleanup(VulkanContext* pContext);
 
@@ -21,6 +21,6 @@ public:
 	VkDeviceMemory	m_vkVertexBufferMemory;
 
 private:
-	void		CreateVertexBuffer(const VulkanContext* pContext, const std::vector<Helper::VertexP>& vertices);
+	void		CreateVertexBuffer(const VulkanContext* pContext, const std::vector<Helper::VertexPC>& vertices);
 };
 

@@ -96,11 +96,11 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	CHECK(CreateCommandBuffers());
 
 	// Create Mesh
-	std::vector<Helper::VertexP> vertices =
+	std::vector<Helper::VertexPC> vertices =
 	{
-		{{0.0f, -0.4f, 0.0f}},
-		{{0.4f, 0.4f, 0.0f}},
-		{{-0.4f, 0.4f, 0.0f}}
+		{{0.0f, -0.4f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+		{{0.4f, 0.4f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+		{{-0.4f, 0.4f, 0.0f}, {0.0f, 0.0f, 1.0f}}
 	};
 
 	m_pMesh = new VulkanMesh(m_pContext, vertices);
@@ -347,16 +347,22 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			// How the data for a single vertex is as a whole!
 			VkVertexInputBindingDescription inputBindingDesc = {};
 			inputBindingDesc.binding = 0;
-			inputBindingDesc.stride = sizeof(Helper::VertexP);
+			inputBindingDesc.stride = sizeof(Helper::VertexPC);
 			inputBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-			std::array<VkVertexInputAttributeDescription, 1> attrDesc = {};
+			std::array<VkVertexInputAttributeDescription, 2> attrDesc = {};
 
 			// Position
 			attrDesc[0].binding = 0;
 			attrDesc[0].location = 0;
 			attrDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attrDesc[0].offset = offsetof(Helper::VertexP, Position);
+			attrDesc[0].offset = offsetof(Helper::VertexPC, Position);
+
+			// Color
+			attrDesc[1].binding = 0;
+			attrDesc[1].location = 1;
+			attrDesc[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrDesc[1].offset = offsetof(Helper::VertexPC, Color);
 
 			// Vertex Input (TODO)
 			VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
