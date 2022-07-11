@@ -98,12 +98,19 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	// Create Mesh
 	std::vector<Helper::VertexPC> vertices =
 	{
-		{{0.0f, -0.4f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+		{{0.4f, -0.4f, 0.0f}, {1.0f, 0.0f, 0.0f}},
 		{{0.4f, 0.4f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-		{{-0.4f, 0.4f, 0.0f}, {0.0f, 0.0f, 1.0f}}
+		{{-0.4f, 0.4f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+		{{-0.4f, -0.4f, 0.0f}, {1.0f, 1.0f, 0.0f}}
 	};
 
-	m_pMesh = new VulkanMesh(m_pContext, vertices);
+	std::vector<uint32_t> indices =
+	{
+		0, 1, 2,
+		2, 3, 0
+	};
+
+	m_pMesh = new VulkanMesh(m_pContext, vertices, indices);
 
 	CHECK(RecordCommands());
 	CHECK(CreateSynchronization());
@@ -277,8 +284,10 @@ bool VulkanRenderer::RecordCommands()
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(m_pContext->vkListGraphicsCommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
+		vkCmdBindIndexBuffer(m_pContext->vkListGraphicsCommandBuffers[i], m_pMesh->m_vkIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
 		// Execute
-		vkCmdDraw(m_pContext->vkListGraphicsCommandBuffers[i], static_cast<uint32_t>(m_pMesh->m_uiVertexCount), 1, 0, 0);
+		vkCmdDrawIndexed(m_pContext->vkListGraphicsCommandBuffers[i], m_pMesh->m_uiIndexCount, 1, 0, 0, 0);
 
 		// End RenderPass
 		vkCmdEndRenderPass(m_pContext->vkListGraphicsCommandBuffers[i]);
