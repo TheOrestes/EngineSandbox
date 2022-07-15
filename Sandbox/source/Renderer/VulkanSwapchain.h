@@ -40,7 +40,6 @@ private:
 	VkExtent2D							ChooseSwapExtent(const VulkanContext* pContext);
 
 private:
-	uint32_t							m_uiImageCount;
 	SwapchainInfo						m_SwapchainInfo;
 };
 

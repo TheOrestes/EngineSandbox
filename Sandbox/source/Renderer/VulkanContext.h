@@ -36,6 +36,7 @@ public:
 	VkDevice							vkDevice;
 	VkPhysicalDeviceMemoryProperties	vkDeviceMemoryProps;
 
+	uint32_t							uiNumSwapchainImages;
 	VkSwapchainKHR						vkSwapchain;
 	VkExtent2D							vkSwapchainExtent;
 	VkFormat							vkSwapchainImageFormat;

@@ -49,10 +49,10 @@ bool VulkanSwapchain::CreateSwapchain(VulkanContext* pContext, const QueueFamily
 	// decide how many images to have in the swap chain, it's good practice to have an extra count.
 	// Also make sure it does not exceed maximum number of images
 	uint32_t minImageCount = m_SwapchainInfo.surfaceCapabilities.minImageCount;
-	m_uiImageCount = minImageCount + 1;
-	if (m_SwapchainInfo.surfaceCapabilities.maxImageCount > 0 && m_uiImageCount > m_SwapchainInfo.surfaceCapabilities.maxImageCount)
+	minImageCount = minImageCount + 1;
+	if (m_SwapchainInfo.surfaceCapabilities.maxImageCount > 0 && minImageCount > m_SwapchainInfo.surfaceCapabilities.maxImageCount)
 	{
-		m_uiImageCount = m_SwapchainInfo.surfaceCapabilities.maxImageCount;
+		minImageCount = m_SwapchainInfo.surfaceCapabilities.maxImageCount;
 	}
 
 	// Swapchain creation info
@@ -63,7 +63,7 @@ bool VulkanSwapchain::CreateSwapchain(VulkanContext* pContext, const QueueFamily
 	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
 	swapchainCreateInfo.presentMode = presentMode;
 	swapchainCreateInfo.imageExtent = extent;
-	swapchainCreateInfo.minImageCount = m_uiImageCount;
+	swapchainCreateInfo.minImageCount = minImageCount;
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	swapchainCreateInfo.preTransform = m_SwapchainInfo.surfaceCapabilities.currentTransform;

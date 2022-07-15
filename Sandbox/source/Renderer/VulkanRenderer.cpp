@@ -92,7 +92,6 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 
 	CHECK(CreateRenderPass());
 	CHECK(CreateFrameBuffers());
-	CHECK(CreateGraphicsPipeline(Helper::FORWARD));
 	CHECK(CreateCommandBuffers());
 
 	// Create Mesh
@@ -111,7 +110,9 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	};
 
 	m_pMesh = new VulkanMesh(m_pContext, vertices, indices);
+	CHECK(m_pMesh->SetupDescriptors(m_pContext));
 
+	CHECK(CreateGraphicsPipeline(Helper::FORWARD));
 	CHECK(RecordCommands());
 	CHECK(CreateSynchronization());
 }
@@ -119,7 +120,7 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::Update(float dt)
 {
-
+	m_pMesh->Update(m_pContext, dt);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -153,6 +154,8 @@ void VulkanRenderer::Render()
 	//	LOG_ERROR("Failed to acquire swapchain image!");
 	//	return;
 	//}
+
+	m_pMesh->UpdateUniforms(m_pContext, imageIndex);
 
 
 	// -- SUBMIT COMMAND BUFFER TO RENDER
@@ -285,6 +288,10 @@ bool VulkanRenderer::RecordCommands()
 		vkCmdBindVertexBuffers(m_pContext->vkListGraphicsCommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
 		vkCmdBindIndexBuffer(m_pContext->vkListGraphicsCommandBuffers[i], m_pMesh->m_vkIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+		// Bind Descriptor sets!
+		vkCmdBindDescriptorSets(m_pContext->vkListGraphicsCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pContext->vkForwardRenderingPipelineLayout,
+								0, 1, &m_pMesh->m_ListDescriptorSets[i], 0, nullptr);
 
 		// Execute
 		vkCmdDrawIndexed(m_pContext->vkListGraphicsCommandBuffers[i], m_pMesh->m_uiIndexCount, 1, 0, 0, 0);
@@ -425,7 +432,7 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			rasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 			rasterizerCreateInfo.lineWidth = 1.0f;
 			rasterizerCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-			rasterizerCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+			rasterizerCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 			rasterizerCreateInfo.depthBiasEnable = VK_FALSE;
 
 			// Multisampling
@@ -454,8 +461,8 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			// Pipeline layout (TODO: Descriptor set layouts)
 			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 			pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			pipelineLayoutCreateInfo.setLayoutCount = 0;
-			pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+			pipelineLayoutCreateInfo.setLayoutCount = 1;
+			pipelineLayoutCreateInfo.pSetLayouts = &(m_pMesh->m_vkDescriptorSetLayout);
 			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 			pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 

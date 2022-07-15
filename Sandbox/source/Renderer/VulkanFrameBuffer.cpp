@@ -98,6 +98,9 @@ bool VulkanFrameBuffer::CreateFramebuffers(VulkanContext* pContext)
 	std::vector<VkImage> images(swapchainImageCount);
 	VK_CHECK(vkGetSwapchainImagesKHR(pContext->vkDevice, pContext->vkSwapchain, &swapchainImageCount, images.data()));
 
+	// Save it to the Context!
+	pContext->uiNumSwapchainImages = swapchainImageCount;
+
 	for (VkImage image : images)
 	{
 		// store image handle
