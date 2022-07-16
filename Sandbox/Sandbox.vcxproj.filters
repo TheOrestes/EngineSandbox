@@ -57,6 +57,9 @@
     <ClInclude Include="source\Renderer\VulkanContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\Renderables\VulkanCube.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Core\SandboxEngine.cpp">
@@ -90,6 +93,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\Renderer\VulkanContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Renderables\VulkanCube.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

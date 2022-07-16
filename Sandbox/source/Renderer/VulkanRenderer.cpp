@@ -4,6 +4,7 @@
 #include "VulkanFrameBuffer.h"
 #include "VulkanContext.h"
 #include "Renderables/VulkanMesh.h"
+#include "Renderables/VulkanCube.h"
 #include "Core/Core.h"
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -15,13 +16,13 @@ VulkanRenderer::VulkanRenderer()
 
 	m_uiCurrentFrame = 0;
 
-	m_pMesh = nullptr;
+	m_pCube = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanRenderer::~VulkanRenderer()
 {
-	SAFE_DELETE(m_pMesh);
+	SAFE_DELETE(m_pCube);
 	SAFE_DELETE(m_pFrameBuffer);
 	SAFE_DELETE(m_pVulkanDevice);
 	SAFE_DELETE(m_pContext);
@@ -32,7 +33,7 @@ void VulkanRenderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_pContext->vkDevice);
 
-	m_pMesh->Cleanup(m_pContext);
+	m_pCube->Cleanup(m_pContext);
 	
 	for (uint16_t i = 0; i < Helper::gMaxFramesDraws; i++)
 	{
@@ -94,23 +95,10 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	CHECK(CreateFrameBuffers());
 	CHECK(CreateCommandBuffers());
 
-	// Create Mesh
-	std::vector<Helper::VertexPC> vertices =
-	{
-		{{0.4f, -0.4f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-		{{0.4f, 0.4f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-		{{-0.4f, 0.4f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-		{{-0.4f, -0.4f, 0.0f}, {1.0f, 1.0f, 0.0f}}
-	};
+	// Create Cube
 
-	std::vector<uint32_t> indices =
-	{
-		0, 1, 2,
-		2, 3, 0
-	};
-
-	m_pMesh = new VulkanMesh(m_pContext, vertices, indices);
-	CHECK(m_pMesh->SetupDescriptors(m_pContext));
+	m_pCube = new VulkanCube();
+	CHECK(m_pCube->InitCube(m_pContext));
 
 	CHECK(CreateGraphicsPipeline(Helper::FORWARD));
 	CHECK(RecordCommands());
@@ -120,7 +108,7 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::Update(float dt)
 {
-	m_pMesh->Update(m_pContext, dt);
+	m_pCube->Update(m_pContext, dt);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -155,7 +143,7 @@ void VulkanRenderer::Render()
 	//	return;
 	//}
 
-	m_pMesh->UpdateUniforms(m_pContext, imageIndex);
+	m_pCube->UpdateUniforms(m_pContext, imageIndex);
 
 
 	// -- SUBMIT COMMAND BUFFER TO RENDER
@@ -283,18 +271,7 @@ bool VulkanRenderer::RecordCommands()
 		// Bind pipeline to be used in RenderPass
 		vkCmdBindPipeline(m_pContext->vkListGraphicsCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pContext->vkForwardRenderingPipeline);
 
-		VkBuffer vertexBuffers[] = { m_pMesh->m_vkVertexBuffer };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(m_pContext->vkListGraphicsCommandBuffers[i], 0, 1, vertexBuffers, offsets);
-
-		vkCmdBindIndexBuffer(m_pContext->vkListGraphicsCommandBuffers[i], m_pMesh->m_vkIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-		// Bind Descriptor sets!
-		vkCmdBindDescriptorSets(m_pContext->vkListGraphicsCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pContext->vkForwardRenderingPipelineLayout,
-								0, 1, &m_pMesh->m_ListDescriptorSets[i], 0, nullptr);
-
-		// Execute
-		vkCmdDrawIndexed(m_pContext->vkListGraphicsCommandBuffers[i], m_pMesh->m_uiIndexCount, 1, 0, 0, 0);
+		m_pCube->Render(m_pContext, i);
 
 		// End RenderPass
 		vkCmdEndRenderPass(m_pContext->vkListGraphicsCommandBuffers[i]);
@@ -459,10 +436,11 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			colorBlendCreateInfo.pAttachments = &colorState;
 
 			// Pipeline layout (TODO: Descriptor set layouts)
+			std::array<VkDescriptorSetLayout, 1> setLayouts = { m_pCube->m_vkDescriptorSetLayout };
 			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 			pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 			pipelineLayoutCreateInfo.setLayoutCount = 1;
-			pipelineLayoutCreateInfo.pSetLayouts = &(m_pMesh->m_vkDescriptorSetLayout);
+			pipelineLayoutCreateInfo.pSetLayouts = setLayouts.data();
 			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 			pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 

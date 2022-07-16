@@ -10,7 +10,7 @@
 class VulkanContext;
 class VulkanDevice;
 class VulkanFrameBuffer;
-class VulkanMesh;
+class VulkanCube;
 
 //---------------------------------------------------------------------------------------------------------------------
 class VulkanRenderer : public IRenderer
@@ -46,6 +46,6 @@ private:
 	std::vector<VkSemaphore>			m_vkListSemaphoreRenderFinished;
 	std::vector<VkFence>				m_vkListFences;
 
-	VulkanMesh*							m_pMesh;
+	VulkanCube*							m_pCube;
 };
 
