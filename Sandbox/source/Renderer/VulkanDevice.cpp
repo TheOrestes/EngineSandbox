@@ -31,6 +31,7 @@ bool VulkanDevice::CreateCommandPool(VulkanContext* pContext)
 {
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;			// create command buffer which is reset everytime
 	poolInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
 	
 	VK_CHECK(vkCreateCommandPool(pContext->vkDevice, &poolInfo, nullptr, &(pContext->vkGraphicsCommandPool)));

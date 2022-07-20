@@ -46,6 +46,70 @@ VulkanContext::~VulkanContext()
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
+VkFormat VulkanContext::ChooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags) const
+{
+	for (VkFormat format : formats)
+	{
+		// Get properties for given formats on this device
+		VkFormatProperties props;
+		vkGetPhysicalDeviceFormatProperties(vkPhysicalDevice, format, &props);
+		
+		// depending on tiling choice, need to check for different bit flag
+		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & featureFlags) == featureFlags)
+		{
+			return format;
+		}
+		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & featureFlags) == featureFlags)
+		{
+			return format;
+		}
+	}
+
+	LOG_ERROR("Failed to find matching format!");
+}
+
+//-----------------------------------------------------------------------------------------------------------------------
+bool VulkanContext::CreateImage2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usageFlags, 
+									VkMemoryPropertyFlags memoryPropertyFlags, VkImage* pImage, VkDeviceMemory* pDeviceMemory) const
+{
+	// Image creation info!
+	VkImageCreateInfo imageInfo = {};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = width;
+	imageInfo.extent.height = height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = format;
+	imageInfo.tiling = tiling;
+	imageInfo.usage = usageFlags;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	// Create Image!
+	VK_CHECK(vkCreateImage(vkDevice, &imageInfo, nullptr, pImage));
+
+	// Get memory requirements for the image...
+	VkMemoryRequirements imgMemReqs;
+	vkGetImageMemoryRequirements(vkDevice, *pImage, &imgMemReqs);
+
+	// Allocate memory using requirements & user defined properties...
+	VkMemoryAllocateInfo memAllocInfo = {};
+	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	memAllocInfo.allocationSize = imgMemReqs.size;
+	memAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(imgMemReqs.memoryTypeBits, memoryPropertyFlags);
+
+	VK_CHECK(vkAllocateMemory(vkDevice, &memAllocInfo, nullptr, pDeviceMemory));
+
+	// Connect memory to the image!
+	VK_CHECK(vkBindImageMemory(vkDevice, *pImage, *pDeviceMemory, 0));
+
+	return true;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------
 //--- Create Image View
 bool VulkanContext::CreateImageView2D(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView* imageView) const
 {

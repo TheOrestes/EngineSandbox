@@ -46,6 +46,13 @@ namespace Helper
 		VkImageView	imageView;
 	};
 
+	struct DepthAttachment
+	{
+		VkImage			image;
+		VkImageView		imageView;
+		VkDeviceMemory	deviceMemory;
+	};
+
 	//-----------------------------------------------------------------------------------------------------------------------
 	// VERTEX STRUCTURES
 

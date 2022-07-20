@@ -23,13 +23,14 @@ public:
 	void								Update(float dt);
 	void								Render();
 	void								HandleWindowsResize();
-	bool								RecordCommands();
+	void								RecordCommands(uint32_t currentImage);
 	bool								CreateSynchronization();
 	void								Cleanup();
 	void								CleanupOnWindowsResize();
 
 private:
 	bool								CreateVulkanDevice();
+	bool								CreateFrameBufferAttachments();
 	bool								CreateFrameBuffers();
 	bool								CreateCommandBuffers();
 	bool								CreateGraphicsPipeline(Helper::ePipeline pipeline);

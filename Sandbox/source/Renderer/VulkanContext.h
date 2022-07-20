@@ -19,6 +19,9 @@ public:
 	VkShaderModule						CreateShaderModule(const std::string& fileName) const;
 
 	//-- Images
+	VkFormat							ChooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags) const;
+	bool								CreateImage2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usageFlags,
+													VkMemoryPropertyFlags memoryPropertyFlags, VkImage* pImage, VkDeviceMemory* pDeviceMemory) const;
 	bool								CreateImageView2D(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView* imageView) const;
 
 	//-- Buffers
@@ -40,6 +43,7 @@ public:
 	VkSwapchainKHR						vkSwapchain;
 	VkExtent2D							vkSwapchainExtent;
 	VkFormat							vkSwapchainImageFormat;
+	VkFormat							vkDepthImageFormat;
 
 	VkQueue								vkQueueGraphics;
 	VkQueue								vkQueuePresent;

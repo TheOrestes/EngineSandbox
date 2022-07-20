@@ -18,6 +18,10 @@ VulkanFrameBuffer::~VulkanFrameBuffer()
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanFrameBuffer::Cleanup(VulkanContext* pContext)
 {
+	vkDestroyImageView(pContext->vkDevice, m_depthAttachment.imageView, nullptr);
+	vkDestroyImage(pContext->vkDevice, m_depthAttachment.image, nullptr);
+	vkFreeMemory(pContext->vkDevice, m_depthAttachment.deviceMemory, nullptr);
+
 	for (uint32_t i = 0; i < m_ListAttachments.size(); i++)
 	{
 		vkDestroyFramebuffer(pContext->vkDevice, pContext->vkListFramebuffers[i], nullptr);
@@ -90,7 +94,7 @@ void VulkanFrameBuffer::HandleWindowResize(VulkanContext* pContext)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanFrameBuffer::CreateFramebuffers(VulkanContext* pContext)
+bool VulkanFrameBuffer::CreateFramebuffersAttachments(VulkanContext* pContext)
 {
 	uint32_t swapchainImageCount;
 	VK_CHECK(vkGetSwapchainImagesKHR(pContext->vkDevice, pContext->vkSwapchain, &swapchainImageCount, nullptr));
@@ -114,8 +118,15 @@ bool VulkanFrameBuffer::CreateFramebuffers(VulkanContext* pContext)
 		m_ListAttachments.push_back(swapchainImage);
 	}
 
-	LOG_DEBUG("Framebuffer attachments created");
+	// Create Depth buffer attachment!
+	CHECK(CreateDepthBuffer(pContext));
 
+	LOG_DEBUG("Framebuffer attachments created");
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanFrameBuffer::CreateFramebuffers(VulkanContext* pContext)
+{
 	// Check if RenderPass exists!
 	if (pContext->vkForwardRenderingRenderPass == VK_NULL_HANDLE)
 	{
@@ -128,9 +139,10 @@ bool VulkanFrameBuffer::CreateFramebuffers(VulkanContext* pContext)
 	// create framebuffer for each swapchain image
 	for (uint32_t i = 0; i < m_ListAttachments.size(); i++)
 	{
-		std::array<VkImageView, 1> attachments =
+		std::array<VkImageView, 2> attachments =
 		{
-			m_ListAttachments[i].imageView
+			m_ListAttachments[i].imageView,
+			m_depthAttachment.imageView
 		};
 
 		VkFramebufferCreateInfo fbCreateInfo = {};
@@ -146,6 +158,30 @@ bool VulkanFrameBuffer::CreateFramebuffers(VulkanContext* pContext)
 	}
 
 	LOG_DEBUG("Framebuffers created!");
+
+	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanFrameBuffer::CreateDepthBuffer(VulkanContext* pRC)
+{
+	// List of depth formats we need
+	std::vector<VkFormat> depthFormats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT };
+
+	// Choose the supported format
+	VkFormat chosenFormat = pRC->ChooseSupportedFormat(depthFormats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	pRC->vkDepthImageFormat = chosenFormat;
+
+	// Create depth image
+	CHECK(pRC->CreateImage2D(	pRC->vkSwapchainExtent.width,
+								pRC->vkSwapchainExtent.height,
+								chosenFormat, VK_IMAGE_TILING_OPTIMAL, 
+								VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+								VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+								&m_depthAttachment.image, &m_depthAttachment.deviceMemory));
+
+	
+	CHECK(pRC->CreateImageView2D(m_depthAttachment.image, chosenFormat, VK_IMAGE_ASPECT_DEPTH_BIT, &m_depthAttachment.imageView));
 
 	return true;
 }

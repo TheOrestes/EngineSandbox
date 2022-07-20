@@ -63,11 +63,18 @@ bool VulkanRenderer::CreateVulkanDevice()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanRenderer::CreateFrameBuffers()
+bool VulkanRenderer::CreateFrameBufferAttachments()
 {
 	m_pFrameBuffer = new VulkanFrameBuffer();
-	CHECK(m_pFrameBuffer->CreateFramebuffers(m_pContext));
-	
+	CHECK(m_pFrameBuffer->CreateFramebuffersAttachments(m_pContext));
+
+	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanRenderer::CreateFrameBuffers()
+{
+	CHECK(m_pFrameBuffer->CreateFramebuffers(m_pContext));	
 	return true;
 }
 
@@ -90,8 +97,8 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	VK_CHECK(glfwCreateWindowSurface(instance, pWindow, nullptr, &(m_pContext->vkSurface)));
 
 	CHECK(CreateVulkanDevice());
-
-	CHECK(CreateRenderPass());
+	CHECK(CreateFrameBufferAttachments());
+	CHECK(CreateRenderPass());	
 	CHECK(CreateFrameBuffers());
 	CHECK(CreateCommandBuffers());
 
@@ -101,7 +108,6 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	CHECK(m_pCube->InitCube(m_pContext));
 
 	CHECK(CreateGraphicsPipeline(Helper::FORWARD));
-	CHECK(RecordCommands());
 	CHECK(CreateSynchronization());
 }
 
@@ -143,6 +149,7 @@ void VulkanRenderer::Render()
 	//	return;
 	//}
 
+	RecordCommands(imageIndex);
 	m_pCube->UpdateUniforms(m_pContext, imageIndex);
 
 
@@ -237,7 +244,7 @@ void VulkanRenderer::HandleWindowsResize()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanRenderer::RecordCommands()
+void VulkanRenderer::RecordCommands(uint32_t currentImage)
 {
 	// Information about how to begin each command buffer
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
@@ -250,37 +257,32 @@ bool VulkanRenderer::RecordCommands()
 	renderPassBeginInfo.renderArea.offset = { 0, 0 };
 	renderPassBeginInfo.renderArea.extent = m_pContext->vkSwapchainExtent;
 
-	std::array<VkClearValue, 1> clearValues =
-	{
-		{0.01f, 0.01f, 0.01f, 1.0f}
-	};
+	std::array<VkClearValue, 2> clearValues = {};
+
+	clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
+	clearValues[1].depthStencil.depth = 1.0f;
 
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassBeginInfo.pClearValues = clearValues.data();
 	
-	for(uint32_t i = 0; i < m_pContext->vkListGraphicsCommandBuffers.size(); i++)
-	{
-		renderPassBeginInfo.framebuffer = m_pContext->vkListFramebuffers[i];
-
-		// start recording...
-		VK_CHECK(vkBeginCommandBuffer(m_pContext->vkListGraphicsCommandBuffers[i], &cmdBufferBeginInfo));
-
-		// Begin RenderPass
-		vkCmdBeginRenderPass(m_pContext->vkListGraphicsCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		// Bind pipeline to be used in RenderPass
-		vkCmdBindPipeline(m_pContext->vkListGraphicsCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pContext->vkForwardRenderingPipeline);
-
-		m_pCube->Render(m_pContext, i);
-
-		// End RenderPass
-		vkCmdEndRenderPass(m_pContext->vkListGraphicsCommandBuffers[i]);
-
-		// end recording...
-		VK_CHECK(vkEndCommandBuffer(m_pContext->vkListGraphicsCommandBuffers[i]));
-
-		LOG_INFO("Framebuffer{0} command recorded", i);
-	}
+	renderPassBeginInfo.framebuffer = m_pContext->vkListFramebuffers[currentImage];
+	
+	// start recording...
+	vkBeginCommandBuffer(m_pContext->vkListGraphicsCommandBuffers[currentImage], &cmdBufferBeginInfo);
+	
+	// Begin RenderPass
+	vkCmdBeginRenderPass(m_pContext->vkListGraphicsCommandBuffers[currentImage], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	
+	// Bind pipeline to be used in RenderPass
+	vkCmdBindPipeline(m_pContext->vkListGraphicsCommandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pContext->vkForwardRenderingPipeline);
+	
+	m_pCube->Render(m_pContext, currentImage);
+	
+	// End RenderPass
+	vkCmdEndRenderPass(m_pContext->vkListGraphicsCommandBuffers[currentImage]);
+	
+	// end recording...
+	vkEndCommandBuffer(m_pContext->vkListGraphicsCommandBuffers[currentImage]);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -446,7 +448,14 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 
 			VK_CHECK(vkCreatePipelineLayout(m_pContext->vkDevice, &pipelineLayoutCreateInfo, nullptr, &(m_pContext->vkForwardRenderingPipelineLayout)));
 
-			// TODO (Setup Depth Stencil testing)
+			// Depth Stencil 
+			VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
+			depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+			depthStencilCreateInfo.depthTestEnable = VK_TRUE;
+			depthStencilCreateInfo.depthWriteEnable = VK_TRUE;
+			depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+			depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;
+			depthStencilCreateInfo.stencilTestEnable = VK_FALSE;
 
 			VkGraphicsPipelineCreateInfo forwardRenderingPipelineInfo = {};
 			forwardRenderingPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -459,7 +468,7 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			forwardRenderingPipelineInfo.pRasterizationState = &rasterizerCreateInfo;
 			forwardRenderingPipelineInfo.pMultisampleState = &msCreateInfo;
 			forwardRenderingPipelineInfo.pColorBlendState = &colorBlendCreateInfo;
-			forwardRenderingPipelineInfo.pDepthStencilState = nullptr;
+			forwardRenderingPipelineInfo.pDepthStencilState = &depthStencilCreateInfo;
 			forwardRenderingPipelineInfo.layout = m_pContext->vkForwardRenderingPipelineLayout;
 			forwardRenderingPipelineInfo.renderPass = m_pContext->vkForwardRenderingRenderPass;
 			forwardRenderingPipelineInfo.subpass = 0;
@@ -488,7 +497,8 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanRenderer::CreateRenderPass()
 {
-	// Color attachment of render pass
+	//-- ATTACHMENTS
+	// 1. Color attachment
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = m_pContext->vkSwapchainImageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -503,10 +513,27 @@ bool VulkanRenderer::CreateRenderPass()
 	colorAttachRef.attachment = 0;
 	colorAttachRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+	// 2. Depth attachment
+	VkAttachmentDescription depthAttachment = {};
+	depthAttachment.format = m_pContext->vkDepthImageFormat;
+	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference depthAttachRef = {};
+	depthAttachRef.attachment = 1;
+	depthAttachRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	//-- SUBPASSES
 	VkSubpassDescription subpass = {};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachRef;
+	subpass.pDepthStencilAttachment = &depthAttachRef;
 
 	std::array<VkSubpassDependency, 2> subpassDependencies;
 
@@ -528,11 +555,13 @@ bool VulkanRenderer::CreateRenderPass()
 	subpassDependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 	subpassDependencies[1].dependencyFlags = 0;
 
+	//-- RENDER PASS!
+	std::array<VkAttachmentDescription, 2> renderPassAttachments = { colorAttachment, depthAttachment };
 
 	VkRenderPassCreateInfo renderpassCreateInfo = {};
 	renderpassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderpassCreateInfo.attachmentCount = 1;
-	renderpassCreateInfo.pAttachments = &colorAttachment;
+	renderpassCreateInfo.attachmentCount = static_cast<uint32_t>(renderPassAttachments.size());
+	renderpassCreateInfo.pAttachments = renderPassAttachments.data();
 	renderpassCreateInfo.subpassCount = 1;
 	renderpassCreateInfo.pSubpasses = &subpass;
 	renderpassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependencies.size());
