@@ -46,7 +46,7 @@ namespace Helper
 		VkImageView	imageView;
 	};
 
-	struct DepthAttachment
+	struct VulkanImage
 	{
 		VkImage			image;
 		VkImageView		imageView;
@@ -63,6 +63,15 @@ namespace Helper
 
 		glm::vec3 Position;
 		glm::vec3 Color;
+	};
+
+	struct VertexPT
+	{
+		VertexPT() : Position(glm::vec3(0)), UV(glm::vec2(0)) {}
+		VertexPT(const glm::vec3& _pos, const glm::vec2& _uv) : Position(_pos), UV(_uv) {}
+
+		glm::vec3 Position;
+		glm::vec2 UV;
 	};
 }
 

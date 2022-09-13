@@ -342,7 +342,7 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			// How the data for a single vertex is as a whole!
 			VkVertexInputBindingDescription inputBindingDesc = {};
 			inputBindingDesc.binding = 0;
-			inputBindingDesc.stride = sizeof(Helper::VertexPC);
+			inputBindingDesc.stride = sizeof(Helper::VertexPT);
 			inputBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 			std::array<VkVertexInputAttributeDescription, 2> attrDesc = {};
@@ -351,13 +351,13 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			attrDesc[0].binding = 0;
 			attrDesc[0].location = 0;
 			attrDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attrDesc[0].offset = offsetof(Helper::VertexPC, Position);
+			attrDesc[0].offset = offsetof(Helper::VertexPT, Position);
 
-			// Color
+			// UV
 			attrDesc[1].binding = 0;
 			attrDesc[1].location = 1;
-			attrDesc[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attrDesc[1].offset = offsetof(Helper::VertexPC, Color);
+			attrDesc[1].format = VK_FORMAT_R32G32_SFLOAT;
+			attrDesc[1].offset = offsetof(Helper::VertexPT, UV);
 
 			// Vertex Input (TODO)
 			VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};

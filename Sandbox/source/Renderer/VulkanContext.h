@@ -23,6 +23,8 @@ public:
 	bool								CreateImage2D(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usageFlags,
 													VkMemoryPropertyFlags memoryPropertyFlags, VkImage* pImage, VkDeviceMemory* pDeviceMemory) const;
 	bool								CreateImageView2D(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView* imageView) const;
+	bool								CopyImageBuffer(VkBuffer srcBuffer, VkImage image, uint32_t width, uint32_t height) const;
+	void								TransitionImageLayout(VkImage srcImage, VkImageLayout oldLayout, VkImageLayout newLayout, VkCommandBuffer cmdBuffer = VK_NULL_HANDLE) const;
 
 	//-- Buffers
 	uint32_t							FindMemoryTypeIndex(uint32_t allowedTypeIndex, VkMemoryPropertyFlags props) const;
@@ -33,7 +35,7 @@ public:
 
 public:
 	VkInstance							vkInst;
-	GLFWwindow* pWindow;
+	GLFWwindow*							pWindow;
 	VkSurfaceKHR						vkSurface;
 	VkPhysicalDevice					vkPhysicalDevice;
 	VkDevice							vkDevice;

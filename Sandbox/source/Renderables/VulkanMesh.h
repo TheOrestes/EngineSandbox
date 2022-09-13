@@ -17,7 +17,7 @@ public:
 		m_vkVertexBufferMemory(VK_NULL_HANDLE),
 		m_vkIndexBufferMemory(VK_NULL_HANDLE) {}
 
-	VulkanMesh(const VulkanContext* pRC, const std::vector<Helper::VertexPC>& vertices, const std::vector<uint32_t>& indices);
+	VulkanMesh(const VulkanContext* pRC, const std::vector<Helper::VertexPT>& vertices, const std::vector<uint32_t>& indices);
 
 	void							Cleanup(VulkanContext* pContext);
 
@@ -34,7 +34,7 @@ public:
 	VkDeviceMemory					m_vkIndexBufferMemory;
 
 private:
-	void							CreateVertexBuffer(const VulkanContext* pContext, const std::vector<Helper::VertexPC>& vertices);
+	void							CreateVertexBuffer(const VulkanContext* pContext, const std::vector<Helper::VertexPT>& vertices);
 	void							CreateIndexBuffer(const VulkanContext* pContext, const std::vector<uint32_t>& indices);
 };
 

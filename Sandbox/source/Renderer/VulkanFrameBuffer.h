@@ -22,6 +22,6 @@ private:
 
 public:
 	std::vector<Helper::SwapchainAttachment>	m_ListAttachments;
-	Helper::DepthAttachment						m_depthAttachment;
+	Helper::VulkanImage							m_depthAttachment;
 };
 

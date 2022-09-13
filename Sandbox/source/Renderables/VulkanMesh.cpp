@@ -9,7 +9,7 @@ VulkanMesh::~VulkanMesh()
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-VulkanMesh::VulkanMesh(const VulkanContext* pContext, const std::vector<Helper::VertexPC>& vertices, const std::vector<uint32_t>& indices)
+VulkanMesh::VulkanMesh(const VulkanContext* pContext, const std::vector<Helper::VertexPT>& vertices, const std::vector<uint32_t>& indices)
 {
 	m_uiVertexCount = vertices.size();
 	m_uiIndexCount = indices.size();
@@ -29,7 +29,7 @@ void VulkanMesh::Cleanup(VulkanContext* pContext)
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-void VulkanMesh::CreateVertexBuffer(const VulkanContext* pContext, const std::vector<Helper::VertexPC>& vertices)
+void VulkanMesh::CreateVertexBuffer(const VulkanContext* pContext, const std::vector<Helper::VertexPT>& vertices)
 {
 	// Get the size of buffer needed for vertices
 	VkDeviceSize bufferSize = m_uiVertexCount * sizeof(Helper::VertexPC);

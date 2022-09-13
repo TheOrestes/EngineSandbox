@@ -1,6 +1,9 @@
 #include "sandboxPCH.h"
 #include "VulkanCube.h"
 #include "Renderer/VulkanContext.h"
+#include "Renderer/VulkanMaterial.h"
+#include "Renderer/VulkanTexture.h"
+#include "Renderer/Utility.h"
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanCube::VulkanCube()
@@ -8,14 +11,14 @@ VulkanCube::VulkanCube()
 	// Vertex Data!
 	m_ListVertices.resize(8);
 
-	m_ListVertices[0] = Helper::VertexPC(glm::vec3(-1, -1, 1),	glm::vec3(1.0f, 0.0f, 0.0f));
-	m_ListVertices[1] = Helper::VertexPC(glm::vec3(1, -1, 1),	glm::vec3(0.0f, 1.0f, 0.0f));
-	m_ListVertices[2] = Helper::VertexPC(glm::vec3(1, 1, 1),	glm::vec3(0.0f, 0.0f, 1.0f));
-	m_ListVertices[3] = Helper::VertexPC(glm::vec3(-1, 1, 1),	glm::vec3(1.0f, 1.0f, 0.0f));
-	m_ListVertices[4] = Helper::VertexPC(glm::vec3(-1, -1, -1),	glm::vec3(1.0f, 1.0f, 0.0f));
-	m_ListVertices[5] = Helper::VertexPC(glm::vec3(1, -1, -1),	glm::vec3(0.0f, 0.0f, 1.0f));
-	m_ListVertices[6] = Helper::VertexPC(glm::vec3(1, 1, -1),	glm::vec3(0.0f, 1.0f, 0.0f));
-	m_ListVertices[7] = Helper::VertexPC(glm::vec3(-1, 1, -1),	glm::vec3(1.0f, 0.0f, 0.0f));
+	m_ListVertices[0] = Helper::VertexPT(glm::vec3(-1, -1, 1),	glm::vec2(0.0f, 0.0f));
+	m_ListVertices[1] = Helper::VertexPT(glm::vec3(1, -1, 1),	glm::vec2(1.0f, 0.0f));
+	m_ListVertices[2] = Helper::VertexPT(glm::vec3(1, 1, 1),	glm::vec2(1.0f, 1.0f));
+	m_ListVertices[3] = Helper::VertexPT(glm::vec3(-1, 1, 1),	glm::vec2(0.0f, 1.0f));
+	m_ListVertices[4] = Helper::VertexPT(glm::vec3(-1, -1, -1),	glm::vec2(1.0f, 1.0f));
+	m_ListVertices[5] = Helper::VertexPT(glm::vec3(1, -1, -1),	glm::vec2(0.0f, 1.0f));
+	m_ListVertices[6] = Helper::VertexPT(glm::vec3(1, 1, -1),	glm::vec2(0.0f, 0.0f));
+	m_ListVertices[7] = Helper::VertexPT(glm::vec3(-1, 1, -1),	glm::vec2(1.0f, 0.0f));
 
 	// Index Data!
 	m_ListIndices.resize(36);
@@ -40,6 +43,7 @@ VulkanCube::VulkanCube()
 
 	m_pShaderDataBuffer = nullptr;
 	m_pMesh = nullptr;
+	m_pMaterial = nullptr;
 
 	m_vecPosition = glm::vec3(0,0,-2);
 	m_vecRotationAxis = glm::vec3(0, 1, 0);
@@ -48,53 +52,55 @@ VulkanCube::VulkanCube()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-VulkanCube::VulkanCube(const glm::vec3& color)
-{
-	// Vertex Data!
-	m_ListVertices.resize(8);
-
-	m_ListVertices[0] = Helper::VertexPC(glm::vec3(-1, -1, 1),	color);
-	m_ListVertices[1] = Helper::VertexPC(glm::vec3(1, -1, 1),	color);
-	m_ListVertices[2] = Helper::VertexPC(glm::vec3(1, 1, 1),	color);
-	m_ListVertices[3] = Helper::VertexPC(glm::vec3(-1, 1, 1),	color);
-	m_ListVertices[4] = Helper::VertexPC(glm::vec3(-1, -1, -1),	color);
-	m_ListVertices[5] = Helper::VertexPC(glm::vec3(1, -1, -1),	color);
-	m_ListVertices[6] = Helper::VertexPC(glm::vec3(1, 1, -1),	color);
-	m_ListVertices[7] = Helper::VertexPC(glm::vec3(-1, 1, -1),	color);
-
-	// Index Data!
-	m_ListIndices.resize(36);
-
-	m_ListIndices[0] = 0;				m_ListIndices[1] = 1;			m_ListIndices[2] = 2;
-	m_ListIndices[3] = 2;				m_ListIndices[4] = 3;			m_ListIndices[5] = 0;
-
-	m_ListIndices[6] = 3;				m_ListIndices[7] = 2;			m_ListIndices[8] = 6;
-	m_ListIndices[9] = 6;				m_ListIndices[10] = 7;			m_ListIndices[11] = 3;
-
-	m_ListIndices[12] = 7;				m_ListIndices[13] = 6;			m_ListIndices[14] = 5;
-	m_ListIndices[15] = 5;				m_ListIndices[16] = 4;			m_ListIndices[17] = 7;
-
-	m_ListIndices[18] = 4;				m_ListIndices[19] = 5;			m_ListIndices[20] = 1;
-	m_ListIndices[21] = 1;				m_ListIndices[22] = 0;			m_ListIndices[23] = 4;
-
-	m_ListIndices[24] = 4;				m_ListIndices[25] = 0;			m_ListIndices[26] = 3;
-	m_ListIndices[27] = 3;				m_ListIndices[28] = 7;			m_ListIndices[29] = 4;
-
-	m_ListIndices[30] = 1;				m_ListIndices[31] = 5;			m_ListIndices[32] = 6;
-	m_ListIndices[33] = 6;				m_ListIndices[34] = 2;			m_ListIndices[35] = 1;
-
-	m_pShaderDataBuffer = nullptr;
-	m_pMesh = nullptr;
-
-	m_vecPosition = glm::vec3(0, 0, 4);
-	m_vecRotationAxis = glm::vec3(0, 1, 0);
-	m_vecScale = glm::vec3(1, 1, 1);
-	m_fRotation = 0.0f;
-}
+//VulkanCube::VulkanCube(const glm::vec3& color)
+//{
+//	// Vertex Data!
+//	m_ListVertices.resize(8);
+//
+//	m_ListVertices[0] = Helper::VertexPC(glm::vec3(-1, -1, 1),	color);
+//	m_ListVertices[1] = Helper::VertexPC(glm::vec3(1, -1, 1),	color);
+//	m_ListVertices[2] = Helper::VertexPC(glm::vec3(1, 1, 1),	color);
+//	m_ListVertices[3] = Helper::VertexPC(glm::vec3(-1, 1, 1),	color);
+//	m_ListVertices[4] = Helper::VertexPC(glm::vec3(-1, -1, -1),	color);
+//	m_ListVertices[5] = Helper::VertexPC(glm::vec3(1, -1, -1),	color);
+//	m_ListVertices[6] = Helper::VertexPC(glm::vec3(1, 1, -1),	color);
+//	m_ListVertices[7] = Helper::VertexPC(glm::vec3(-1, 1, -1),	color);
+//
+//	// Index Data!
+//	m_ListIndices.resize(36);
+//
+//	m_ListIndices[0] = 0;				m_ListIndices[1] = 1;			m_ListIndices[2] = 2;
+//	m_ListIndices[3] = 2;				m_ListIndices[4] = 3;			m_ListIndices[5] = 0;
+//
+//	m_ListIndices[6] = 3;				m_ListIndices[7] = 2;			m_ListIndices[8] = 6;
+//	m_ListIndices[9] = 6;				m_ListIndices[10] = 7;			m_ListIndices[11] = 3;
+//
+//	m_ListIndices[12] = 7;				m_ListIndices[13] = 6;			m_ListIndices[14] = 5;
+//	m_ListIndices[15] = 5;				m_ListIndices[16] = 4;			m_ListIndices[17] = 7;
+//
+//	m_ListIndices[18] = 4;				m_ListIndices[19] = 5;			m_ListIndices[20] = 1;
+//	m_ListIndices[21] = 1;				m_ListIndices[22] = 0;			m_ListIndices[23] = 4;
+//
+//	m_ListIndices[24] = 4;				m_ListIndices[25] = 0;			m_ListIndices[26] = 3;
+//	m_ListIndices[27] = 3;				m_ListIndices[28] = 7;			m_ListIndices[29] = 4;
+//
+//	m_ListIndices[30] = 1;				m_ListIndices[31] = 5;			m_ListIndices[32] = 6;
+//	m_ListIndices[33] = 6;				m_ListIndices[34] = 2;			m_ListIndices[35] = 1;
+//
+//	m_pShaderDataBuffer = nullptr;
+//	m_pMesh = nullptr;
+//	m_pMaterial = nullptr;
+//
+//	m_vecPosition = glm::vec3(0, 0, 4);
+//	m_vecRotationAxis = glm::vec3(0, 1, 0);
+//	m_vecScale = glm::vec3(1, 1, 1);
+//	m_fRotation = 0.0f;
+//}
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanCube::~VulkanCube()
 {
+	SAFE_DELETE(m_pMaterial);
 	SAFE_DELETE(m_pMesh);
 	SAFE_DELETE(m_pShaderDataBuffer);
 
@@ -106,6 +112,9 @@ VulkanCube::~VulkanCube()
 bool VulkanCube::InitCube(const VulkanContext* pContext)
 {
 	m_pMesh = new VulkanMesh(pContext, m_ListVertices, m_ListIndices);
+
+	m_pMaterial = new VulkanMaterial();
+	m_pMaterial->LoadTexture(pContext, "Default.png", TextureType::TEXTURE_ALBEDO);
 	
 	CHECK(SetupDescriptors(pContext));
 
@@ -117,6 +126,15 @@ bool VulkanCube::SetupDescriptors(const VulkanContext* pContext)
 {
 	m_pShaderDataBuffer = new UniformDataBuffer();
 	m_pShaderDataBuffer->CreateUniformDataBuffers(pContext);
+
+	// Set default material info!
+	m_pShaderDataBuffer->shaderData.albedoColor = glm::vec4(1);
+	m_pShaderDataBuffer->shaderData.emissionColor = glm::vec4(1);
+	m_pShaderDataBuffer->shaderData.hasTextureAEN = glm::vec3(1, 0, 0);
+	m_pShaderDataBuffer->shaderData.hasTextureRMO = glm::vec3(0);
+	m_pShaderDataBuffer->shaderData.metalness = 0.0f;
+	m_pShaderDataBuffer->shaderData.occlusion = 1.0f;
+	m_pShaderDataBuffer->shaderData.roughness = 1.0f;
 
 	// Descriptor Pool
 	CHECK(CreateDescriptorPool(pContext));
@@ -133,15 +151,19 @@ bool VulkanCube::SetupDescriptors(const VulkanContext* pContext)
 //-----------------------------------------------------------------------------------------------------------------------
 bool VulkanCube::CreateDescriptorPool(const VulkanContext* pContext)
 {
-	std::array<VkDescriptorPoolSize, 1> arrDescriptorPoolSize = {};
+	std::array<VkDescriptorPoolSize, 2> arrDescriptorPoolSize = {};
 
 	//-- Uniform buffers
 	arrDescriptorPoolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	arrDescriptorPoolSize[0].descriptorCount = pContext->uiNumSwapchainImages;
 
+	//-- Texture samplers
+	arrDescriptorPoolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	arrDescriptorPoolSize[1].descriptorCount = m_pMaterial->m_uiNumTextures;
+
 	VkDescriptorPoolCreateInfo poolCreateInfo = {};
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolCreateInfo.maxSets = pContext->uiNumSwapchainImages;
+	poolCreateInfo.maxSets = pContext->uiNumSwapchainImages + m_pMaterial->m_uiNumTextures;
 	poolCreateInfo.poolSizeCount = static_cast<uint32_t>(arrDescriptorPoolSize.size());
 	poolCreateInfo.pPoolSizes = arrDescriptorPoolSize.data();
 
@@ -154,13 +176,21 @@ bool VulkanCube::CreateDescriptorPool(const VulkanContext* pContext)
 //-----------------------------------------------------------------------------------------------------------------------
 bool VulkanCube::CreateDescriptorSetLayout(const VulkanContext* pContext)
 {
-	std::array<VkDescriptorSetLayoutBinding, 1> layoutBindings;
+	std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings;
 
+	// Uniform buffer
 	layoutBindings[0].binding = 0;
 	layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	layoutBindings[0].descriptorCount = 1;
-	layoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	layoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	layoutBindings[0].pImmutableSamplers = nullptr;
+
+	// Albedo texture
+	layoutBindings[1].binding = 1;
+	layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	layoutBindings[1].descriptorCount = 1;
+	layoutBindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+	layoutBindings[1].pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -207,8 +237,23 @@ bool VulkanCube::CreateDescriptorSets(const VulkanContext* pContext)
 		ubWriteSet.dstSet = m_ListDescriptorSets[i];
 		ubWriteSet.pBufferInfo = &ubBufferInfo;
 
+		//-- Albedo Texture
+		VkDescriptorImageInfo albedoImageInfo = {};
+		albedoImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		albedoImageInfo.imageView = m_pMaterial->m_pTextureAlbedo->getVkImageView();
+		albedoImageInfo.sampler = m_pMaterial->m_pTextureAlbedo->getVkSampler();
+
+		VkWriteDescriptorSet albedoWriteSet = {};
+		albedoWriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		albedoWriteSet.dstSet = m_ListDescriptorSets[i];
+		albedoWriteSet.dstBinding = 1;
+		albedoWriteSet.dstArrayElement = 0;
+		albedoWriteSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		albedoWriteSet.descriptorCount = 1;
+		albedoWriteSet.pImageInfo = &albedoImageInfo;
+
 		// List of all Descriptor set writes!
-		std::vector<VkWriteDescriptorSet> listWriteSets = { ubWriteSet };
+		std::vector<VkWriteDescriptorSet> listWriteSets = { ubWriteSet, albedoWriteSet };
 
 		// Update the descriptor sets with buffers/binding info
 		vkUpdateDescriptorSets(pContext->vkDevice, static_cast<uint32_t>(listWriteSets.size()), listWriteSets.data(), 0, nullptr);

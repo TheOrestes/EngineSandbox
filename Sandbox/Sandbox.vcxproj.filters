@@ -60,6 +60,15 @@
     <ClInclude Include="source\Renderables\VulkanCube.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\Renderer\IVulkanTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Renderer\VulkanMaterial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Renderer\VulkanTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Core\SandboxEngine.cpp">
@@ -96,6 +105,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\Renderables\VulkanCube.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Renderer\VulkanMaterial.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Renderer\VulkanTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

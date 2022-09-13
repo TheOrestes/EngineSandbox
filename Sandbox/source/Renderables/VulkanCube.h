@@ -5,13 +5,31 @@
 #include "VulkanMesh.h"
 
 class VulkanContext;
+class VulkanMaterial;
 
 //---------------------------------------------------------------------------------------------------------------------
 struct UniformData
 {
+	UniformData()
+	{
+		matWorld = glm::mat4(1);
+		matView = glm::mat4(1);
+		matProjection = glm::mat4(1);
+	}
+
+	// Transformation data...
 	alignas(64) glm::mat4 matWorld;
 	alignas(64) glm::mat4 matView;
 	alignas(64) glm::mat4 matProjection;
+
+	// Material data...
+	alignas(16)	glm::vec4	albedoColor;
+	alignas(16) glm::vec4	emissionColor;
+	alignas(16) glm::vec3	hasTextureAEN;
+	alignas(16) glm::vec3	hasTextureRMO;
+	alignas(4)	float		occlusion;
+	alignas(4)	float		roughness;
+	alignas(4)	float		metalness;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -38,7 +56,7 @@ class VulkanCube
 {
 public:
 	VulkanCube();
-	VulkanCube(const glm::vec3& color);
+	//VulkanCube(const glm::vec3& color);
 
 	~VulkanCube();
 
@@ -63,7 +81,8 @@ public:
 
 private:
 	VulkanMesh*							m_pMesh;
-	std::vector<Helper::VertexPC>		m_ListVertices;
+	VulkanMaterial*						m_pMaterial;
+	std::vector<Helper::VertexPT>		m_ListVertices;
 	std::vector<uint32_t>				m_ListIndices;
 
 public:
