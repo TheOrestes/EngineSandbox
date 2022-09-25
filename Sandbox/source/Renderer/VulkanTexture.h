@@ -17,12 +17,12 @@ public:
 	void						CleanupOnWindowResize(const VulkanContext* pContext);
 
 public:
-	inline VkImage				getVkImage()		{ return m_Image.image; }
-	inline VkImageView			getVkImageView()	{ return m_Image.imageView; }
+	inline VkImage				getVkImage()		{ return m_pImage->image; }
+	inline VkImageView			getVkImageView()	{ return m_pImage->imageView; }
 	inline VkSampler			getVkSampler()		{ return m_vkTextureSampler; }
 
 private:
-	Helper::VulkanImage			m_Image;
+	Helper::VulkanImage*		m_pImage;
 	VkSampler					m_vkTextureSampler;
 								
 private:						

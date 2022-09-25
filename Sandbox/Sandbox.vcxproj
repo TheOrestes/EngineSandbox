@@ -29,6 +29,7 @@
     <ClInclude Include="source\Renderables\VulkanCube.h" />
     <ClInclude Include="source\Renderer\VulkanMaterial.h" />
     <ClInclude Include="source\Renderer\VulkanTexture.h" />
+    <ClInclude Include="source\Renderables\VulkanModel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Core\Logger.cpp" />
@@ -47,6 +48,7 @@
     <ClCompile Include="source\Renderables\VulkanCube.cpp" />
     <ClCompile Include="source\Renderer\VulkanMaterial.cpp" />
     <ClCompile Include="source\Renderer\VulkanTexture.cpp" />
+    <ClCompile Include="source\Renderables\VulkanModel.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -97,7 +99,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CONSOLE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.204.1\Include;$(SolutionDir)Sandbox\source;$(SolutionDir)Sandbox\ThirdParty\spdlog\include;$(SolutionDir)Sandbox\ThirdParty\glfw\include;$(SolutionDir)Sandbox\ThirdParty\glm;$(SolutionDir)Sandbox\ThirdParty\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.204.1\Include;$(SolutionDir)Sandbox\source;$(SolutionDir)Sandbox\ThirdParty\spdlog\include;$(SolutionDir)Sandbox\ThirdParty\glfw\include;$(SolutionDir)Sandbox\ThirdParty\glm;$(SolutionDir)Sandbox\ThirdParty\stb;$(SolutionDir)Sandbox\ThirdParty\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>sandboxPCH.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -105,8 +107,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.204.1\Lib;$(SolutionDir)Sandbox\ThirdParty\glfw\bin\src\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.204.1\Lib;$(SolutionDir)Sandbox\ThirdParty\glfw\bin\src\Debug;$(SolutionDir)Sandbox\ThirdParty\assimp\bin\lib\Debug;$(SolutionDir)Sandbox\ThirdParty\assimp\bin\contrib\zlib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mtd.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>

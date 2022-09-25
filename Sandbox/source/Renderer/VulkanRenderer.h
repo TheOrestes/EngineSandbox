@@ -11,6 +11,7 @@ class VulkanContext;
 class VulkanDevice;
 class VulkanFrameBuffer;
 class VulkanCube;
+class VulkanModel;
 
 //---------------------------------------------------------------------------------------------------------------------
 class VulkanRenderer : public IRenderer
@@ -48,5 +49,6 @@ private:
 	std::vector<VkFence>				m_vkListFences;
 
 	VulkanCube*							m_pCube;
+	VulkanModel*						m_pModel;
 };
 

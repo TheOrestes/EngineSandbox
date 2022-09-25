@@ -2,15 +2,18 @@
 
 #include "glm/glm.hpp"
 #include "Renderer/Utility.h"
-#include "VulkanMesh.h"
+#include "assimp/Importer.hpp"
+#include "assimp/postprocess.h"
+#include "assimp/scene.h"
 
 class VulkanContext;
 class VulkanMaterial;
+class VulkanMesh;
 
 //---------------------------------------------------------------------------------------------------------------------
-struct UniformDataCube
+struct UniformData
 {
-	UniformDataCube()
+	UniformData()
 	{
 		matWorld = glm::mat4(1);
 		matView = glm::mat4(1);
@@ -33,9 +36,9 @@ struct UniformDataCube
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-struct UniformDataBufferCube
+struct UniformDataBuffer
 {
-	UniformDataBufferCube()
+	UniformDataBuffer()
 	{
 		listBuffers.clear();
 		listDeviceMemory.clear();
@@ -45,22 +48,21 @@ struct UniformDataBufferCube
 	void						Cleanup(const VulkanContext* pContext);
 	void						CleanupOnWindowsResize(const VulkanContext* pContext);
 
-	UniformDataCube				shaderData;
+	UniformData					shaderData;
 
 	std::vector<VkBuffer>		listBuffers;
 	std::vector<VkDeviceMemory>	listDeviceMemory;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-class VulkanCube
+class VulkanModel
 {
 public:
-	VulkanCube();
-	//VulkanCube(const glm::vec3& color);
+	VulkanModel();
+	~VulkanModel();
 
-	~VulkanCube();
-
-	bool								InitCube(const VulkanContext* pContext);
+	void								LoadModel(const VulkanContext* pContext, const std::string& filePath);
+	bool								SetupDescriptors(const VulkanContext* pContext);
 	void								Render(const VulkanContext* pContext, uint32_t index);
 	void								Update(const VulkanContext* pContext, float dt);
 	void								UpdateUniforms(const VulkanContext* pContext, uint32_t imageIndex);
@@ -68,23 +70,27 @@ public:
 	void								CleanupOnWindowsResize(VulkanContext* pContext);
 
 private:
-	bool								SetupDescriptors(const VulkanContext* pContext);
+	void								LoadNode(const VulkanContext* pContext, aiNode* node, const aiScene* scene);
+	void								SetDefaultValues(const VulkanContext* pContext, aiTextureType eType);
+	bool								ExtractTextureFromMaterial(const VulkanContext* pContext, aiMaterial* pMaterial, aiTextureType eType);
+	void								LoadTextures(const VulkanContext* pContext, const aiScene* scene);
+	VulkanMesh							LoadMesh(const VulkanContext* pContext, aiMesh* mesh, const aiScene* scene);
 	bool								CreateDescriptorPool(const VulkanContext* pContext);
 	bool								CreateDescriptorSetLayout(const VulkanContext* pContext);
 	bool								CreateDescriptorSets(const VulkanContext* pContext);
 
 public:
-	UniformDataBufferCube*				m_pShaderDataBuffer;
+	UniformDataBuffer*					m_pShaderDataBuffer;
 	VkDescriptorPool					m_vkDescriptorPool;
 	VkDescriptorSetLayout				m_vkDescriptorSetLayout;
 	std::vector<VkDescriptorSet>		m_ListDescriptorSets;
 
 private:
-	VulkanMesh*							m_pMesh;
+	std::vector<VulkanMesh>				m_ListMeshes;
 	VulkanMaterial*						m_pMaterial;
-	std::vector<Helper::VertexPNTBT>	m_ListVertices;
-	std::vector<uint32_t>				m_ListIndices;
 
+	std::string							m_strModelName;
+	
 public:
 	// Transformations!
 	glm::vec3							m_vecPosition;

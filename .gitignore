@@ -38,6 +38,7 @@
 .vs/
 bin/
 bin-int/
+Models/
 
 # Compiler Score files
 *.scor

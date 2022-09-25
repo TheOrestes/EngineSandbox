@@ -11,14 +11,14 @@ VulkanCube::VulkanCube()
 	// Vertex Data!
 	m_ListVertices.resize(8);
 
-	m_ListVertices[0] = Helper::VertexPT(glm::vec3(-1, -1, 1),	glm::vec2(0.0f, 0.0f));
-	m_ListVertices[1] = Helper::VertexPT(glm::vec3(1, -1, 1),	glm::vec2(1.0f, 0.0f));
-	m_ListVertices[2] = Helper::VertexPT(glm::vec3(1, 1, 1),	glm::vec2(1.0f, 1.0f));
-	m_ListVertices[3] = Helper::VertexPT(glm::vec3(-1, 1, 1),	glm::vec2(0.0f, 1.0f));
-	m_ListVertices[4] = Helper::VertexPT(glm::vec3(-1, -1, -1),	glm::vec2(1.0f, 1.0f));
-	m_ListVertices[5] = Helper::VertexPT(glm::vec3(1, -1, -1),	glm::vec2(0.0f, 1.0f));
-	m_ListVertices[6] = Helper::VertexPT(glm::vec3(1, 1, -1),	glm::vec2(0.0f, 0.0f));
-	m_ListVertices[7] = Helper::VertexPT(glm::vec3(-1, 1, -1),	glm::vec2(1.0f, 0.0f));
+	m_ListVertices[0] = Helper::VertexPNTBT(glm::vec3(-1, -1, 1),   glm::vec3(1), glm::vec3(0), glm::vec3(0), glm::vec2(0.0f, 0.0f));
+	m_ListVertices[1] = Helper::VertexPNTBT(glm::vec3(1, -1, 1),    glm::vec3(1), glm::vec3(0), glm::vec3(0), glm::vec2(1.0f, 0.0f));
+	m_ListVertices[2] = Helper::VertexPNTBT(glm::vec3(1, 1, 1),     glm::vec3(1), glm::vec3(0), glm::vec3(0), glm::vec2(1.0f, 1.0f));
+	m_ListVertices[3] = Helper::VertexPNTBT(glm::vec3(-1, 1, 1),    glm::vec3(1), glm::vec3(0), glm::vec3(0), glm::vec2(0.0f, 1.0f));
+	m_ListVertices[4] = Helper::VertexPNTBT(glm::vec3(-1, -1, -1),  glm::vec3(1), glm::vec3(0), glm::vec3(0), glm::vec2(1.0f, 1.0f));
+	m_ListVertices[5] = Helper::VertexPNTBT(glm::vec3(1, -1, -1),   glm::vec3(1), glm::vec3(0), glm::vec3(0), glm::vec2(0.0f, 1.0f));
+	m_ListVertices[6] = Helper::VertexPNTBT(glm::vec3(1, 1, -1),    glm::vec3(1), glm::vec3(0), glm::vec3(0), glm::vec2(0.0f, 0.0f));
+	m_ListVertices[7] = Helper::VertexPNTBT(glm::vec3(-1, 1, -1),   glm::vec3(1), glm::vec3(0), glm::vec3(0), glm::vec2(1.0f, 0.0f));
 
 	// Index Data!
 	m_ListIndices.resize(36);
@@ -114,7 +114,7 @@ bool VulkanCube::InitCube(const VulkanContext* pContext)
 	m_pMesh = new VulkanMesh(pContext, m_ListVertices, m_ListIndices);
 
 	m_pMaterial = new VulkanMaterial();
-	m_pMaterial->LoadTexture(pContext, "Default.png", TextureType::TEXTURE_ALBEDO);
+	m_pMaterial->LoadTexture(pContext, "Assets/Textures/Cube/Default.png", TextureType::TEXTURE_ALBEDO);
 	
 	CHECK(SetupDescriptors(pContext));
 
@@ -124,7 +124,7 @@ bool VulkanCube::InitCube(const VulkanContext* pContext)
 //-----------------------------------------------------------------------------------------------------------------------
 bool VulkanCube::SetupDescriptors(const VulkanContext* pContext)
 {
-	m_pShaderDataBuffer = new UniformDataBuffer();
+	m_pShaderDataBuffer = new UniformDataBufferCube();
 	m_pShaderDataBuffer->CreateUniformDataBuffers(pContext);
 
 	// Set default material info!
@@ -226,7 +226,7 @@ bool VulkanCube::CreateDescriptorSets(const VulkanContext* pContext)
 		VkDescriptorBufferInfo ubBufferInfo = {};
 		ubBufferInfo.buffer = m_pShaderDataBuffer->listBuffers[i];
 		ubBufferInfo.offset = 0;
-		ubBufferInfo.range = sizeof(UniformData);
+		ubBufferInfo.range = sizeof(UniformDataCube);
 
 		VkWriteDescriptorSet ubWriteSet = {};
 		ubWriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -310,8 +310,8 @@ void VulkanCube::Update(const VulkanContext* pContext, float dt)
 void VulkanCube::UpdateUniforms(const VulkanContext* pContext, uint32_t imageIndex)
 {
 	void* data;
-	vkMapMemory(pContext->vkDevice, m_pShaderDataBuffer->listDeviceMemory[imageIndex], 0, sizeof(UniformData), 0, &data);
-	memcpy(data, &(m_pShaderDataBuffer->shaderData), sizeof(UniformData));
+	vkMapMemory(pContext->vkDevice, m_pShaderDataBuffer->listDeviceMemory[imageIndex], 0, sizeof(UniformDataCube), 0, &data);
+	memcpy(data, &(m_pShaderDataBuffer->shaderData), sizeof(UniformDataCube));
 	vkUnmapMemory(pContext->vkDevice, m_pShaderDataBuffer->listDeviceMemory[imageIndex]);
 }
 
@@ -334,9 +334,9 @@ void VulkanCube::CleanupOnWindowsResize(VulkanContext* pContext)
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-void UniformDataBuffer::CreateUniformDataBuffers(const VulkanContext* pContext)
+void UniformDataBufferCube::CreateUniformDataBuffers(const VulkanContext* pContext)
 {
-	VkDeviceSize bufferSize = sizeof(UniformData);
+	VkDeviceSize bufferSize = sizeof(UniformDataCube);
 
 	// One uniform buffer for each swapchain (or command buffer)
 	listBuffers.resize(pContext->uiNumSwapchainImages);
@@ -351,7 +351,7 @@ void UniformDataBuffer::CreateUniformDataBuffers(const VulkanContext* pContext)
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-void UniformDataBuffer::Cleanup(const VulkanContext* pContext)
+void UniformDataBufferCube::Cleanup(const VulkanContext* pContext)
 {
 	for (uint16_t i = 0; i < pContext->uiNumSwapchainImages; i++)
 	{
@@ -361,6 +361,6 @@ void UniformDataBuffer::Cleanup(const VulkanContext* pContext)
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-void UniformDataBuffer::CleanupOnWindowsResize(const VulkanContext* pContext)
+void UniformDataBufferCube::CleanupOnWindowsResize(const VulkanContext* pContext)
 {
 }

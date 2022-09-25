@@ -7,3 +7,6 @@
 [submodule "Sandbox/ThirdParty/glm"]
 	path = Sandbox/ThirdParty/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "Sandbox/ThirdParty/assimp"]
+	path = Sandbox/ThirdParty/assimp
+	url = https://github.com/assimp/assimp.git

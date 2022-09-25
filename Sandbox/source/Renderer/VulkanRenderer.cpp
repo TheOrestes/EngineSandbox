@@ -5,6 +5,7 @@
 #include "VulkanContext.h"
 #include "Renderables/VulkanMesh.h"
 #include "Renderables/VulkanCube.h"
+#include "Renderables/VulkanModel.h"
 #include "Core/Core.h"
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -17,11 +18,13 @@ VulkanRenderer::VulkanRenderer()
 	m_uiCurrentFrame = 0;
 
 	m_pCube = nullptr;
+	m_pModel = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanRenderer::~VulkanRenderer()
 {
+	SAFE_DELETE(m_pModel);
 	SAFE_DELETE(m_pCube);
 	SAFE_DELETE(m_pFrameBuffer);
 	SAFE_DELETE(m_pVulkanDevice);
@@ -32,7 +35,8 @@ VulkanRenderer::~VulkanRenderer()
 void VulkanRenderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_pContext->vkDevice);
-
+	
+	m_pModel->Cleanup(m_pContext);
 	m_pCube->Cleanup(m_pContext);
 	
 	for (uint16_t i = 0; i < Helper::gMaxFramesDraws; i++)
@@ -107,6 +111,9 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 	m_pCube = new VulkanCube();
 	CHECK(m_pCube->InitCube(m_pContext));
 
+	m_pModel = new VulkanModel();
+	m_pModel->LoadModel(m_pContext, "Robot/Steampunk.fbx");
+
 	CHECK(CreateGraphicsPipeline(Helper::FORWARD));
 	CHECK(CreateSynchronization());
 }
@@ -115,6 +122,7 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 void VulkanRenderer::Update(float dt)
 {
 	m_pCube->Update(m_pContext, dt);
+	m_pModel->Update(m_pContext, dt);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -151,7 +159,7 @@ void VulkanRenderer::Render()
 
 	RecordCommands(imageIndex);
 	m_pCube->UpdateUniforms(m_pContext, imageIndex);
-
+	m_pModel->UpdateUniforms(m_pContext, imageIndex);
 
 	// -- SUBMIT COMMAND BUFFER TO RENDER
 	// We ask for image from the swapchain for drawing, but we need to wait till that image is available 
@@ -276,7 +284,8 @@ void VulkanRenderer::RecordCommands(uint32_t currentImage)
 	// Bind pipeline to be used in RenderPass
 	vkCmdBindPipeline(m_pContext->vkListGraphicsCommandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pContext->vkForwardRenderingPipeline);
 	
-	m_pCube->Render(m_pContext, currentImage);
+	//m_pCube->Render(m_pContext, currentImage);
+	m_pModel->Render(m_pContext, currentImage);
 	
 	// End RenderPass
 	vkCmdEndRenderPass(m_pContext->vkListGraphicsCommandBuffers[currentImage]);
@@ -342,22 +351,40 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			// How the data for a single vertex is as a whole!
 			VkVertexInputBindingDescription inputBindingDesc = {};
 			inputBindingDesc.binding = 0;
-			inputBindingDesc.stride = sizeof(Helper::VertexPT);
+			inputBindingDesc.stride = sizeof(Helper::VertexPNTBT);
 			inputBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-			std::array<VkVertexInputAttributeDescription, 2> attrDesc = {};
+			std::array<VkVertexInputAttributeDescription, 5> attrDesc = {};
 
 			// Position
 			attrDesc[0].binding = 0;
 			attrDesc[0].location = 0;
 			attrDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attrDesc[0].offset = offsetof(Helper::VertexPT, Position);
+			attrDesc[0].offset = offsetof(Helper::VertexPNTBT, Position);
 
-			// UV
+			// Normal
 			attrDesc[1].binding = 0;
 			attrDesc[1].location = 1;
-			attrDesc[1].format = VK_FORMAT_R32G32_SFLOAT;
-			attrDesc[1].offset = offsetof(Helper::VertexPT, UV);
+			attrDesc[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrDesc[1].offset = offsetof(Helper::VertexPNTBT, Normal);
+
+			// Tangent
+			attrDesc[2].binding = 0;
+			attrDesc[2].location = 2;
+			attrDesc[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrDesc[2].offset = offsetof(Helper::VertexPNTBT, Tangent);
+
+			// BiNormal
+			attrDesc[3].binding = 0;
+			attrDesc[3].location = 3;
+			attrDesc[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrDesc[3].offset = offsetof(Helper::VertexPNTBT, BiNormal);
+
+			// UV
+			attrDesc[4].binding = 0;
+			attrDesc[4].location = 4;
+			attrDesc[4].format = VK_FORMAT_R32G32_SFLOAT;
+			attrDesc[4].offset = offsetof(Helper::VertexPNTBT, UV);
 
 			// Vertex Input (TODO)
 			VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
@@ -438,10 +465,10 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			colorBlendCreateInfo.pAttachments = &colorState;
 
 			// Pipeline layout (TODO: Descriptor set layouts)
-			std::array<VkDescriptorSetLayout, 1> setLayouts = { m_pCube->m_vkDescriptorSetLayout };
+			std::array<VkDescriptorSetLayout, 1> setLayouts = { m_pModel->m_vkDescriptorSetLayout };
 			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 			pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			pipelineLayoutCreateInfo.setLayoutCount = 1;
+			pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
 			pipelineLayoutCreateInfo.pSetLayouts = setLayouts.data();
 			pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 			pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
@@ -574,34 +601,3 @@ bool VulkanRenderer::CreateRenderPass()
 	return true;
 }
 
-
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------------------------------------------------

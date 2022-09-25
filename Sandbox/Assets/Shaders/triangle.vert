@@ -3,11 +3,15 @@
 //---------------------------------------------------------------------------------------------------------------------
 //-- Input from Program
 layout(location = 0) in vec3 in_Pos;
-layout(location = 1) in vec2 in_UV;
+layout(location = 1) in vec3 in_Normal;
+layout(location = 2) in vec3 in_Tangent;
+layout(location = 3) in vec3 in_BiNormal;
+layout(location = 4) in vec2 in_UV;
 
 //---------------------------------------------------------------------------------------------------------------------
 //-- Output to Fragment shader
 layout(location = 0) out vec2 vs_outUV;
+layout(location = 1) out vec3 vs_outNormal;
 
 //---------------------------------------------------------------------------------------------------------------------
 //-- Uniforms
@@ -32,4 +36,5 @@ void main()
 {
     gl_Position = shaderData.Projection * shaderData.View * shaderData.World * vec4(in_Pos, 1.0f);
     vs_outUV = in_UV;
+    vs_outNormal = in_Normal;
 }

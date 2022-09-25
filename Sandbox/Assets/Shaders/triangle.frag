@@ -3,6 +3,7 @@
 //---------------------------------------------------------------------------------------------------------------------
 //-- Input from Vertex shader
 layout(location = 0) in vec2 vs_outUV;
+layout(location = 1) in vec3 vs_outNormal;
 
 //---------------------------------------------------------------------------------------------------------------------
 // -- Final Output color
@@ -41,4 +42,5 @@ void main()
     }
 
     outColor = vec4(shaderData.albedoColor * albedoColor);
+    //outColor = vec4(vs_outNormal, 1.0f);
 }

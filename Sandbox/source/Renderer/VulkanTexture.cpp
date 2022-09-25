@@ -9,18 +9,22 @@
 //---------------------------------------------------------------------------------------------------------------------
 VulkanTexture::VulkanTexture()
 {
+	m_pImage = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanTexture::~VulkanTexture()
 {
+	SAFE_DELETE(m_pImage);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanTexture::CreateTexture(const VulkanContext* pContext, const std::string& filename, VkFormat format)
 {
+	m_pImage = new Helper::VulkanImage();
+
 	CHECK(CreateImage(pContext, filename, format));
-	CHECK(pContext->CreateImageView2D(m_Image.image, format, VK_IMAGE_ASPECT_COLOR_BIT, &(m_Image.imageView)));
+	CHECK(pContext->CreateImageView2D(m_pImage->image, format, VK_IMAGE_ASPECT_COLOR_BIT, &(m_pImage->imageView)));
 
 	// Create Sampler
 	CHECK(CreateTextureSampler(pContext));
@@ -35,9 +39,9 @@ void VulkanTexture::Cleanup(const VulkanContext* pContext)
 {
 	vkDestroySampler(pContext->vkDevice, m_vkTextureSampler, nullptr);
 
-	vkDestroyImageView(pContext->vkDevice, m_Image.imageView, nullptr);
-	vkDestroyImage(pContext->vkDevice, m_Image.image, nullptr);
-	vkFreeMemory(pContext->vkDevice, m_Image.deviceMemory, nullptr);
+	vkDestroyImageView(pContext->vkDevice, m_pImage->imageView, nullptr);
+	vkDestroyImage(pContext->vkDevice, m_pImage->image, nullptr);
+	vkFreeMemory(pContext->vkDevice, m_pImage->deviceMemory, nullptr);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -51,10 +55,8 @@ unsigned char* VulkanTexture::LoadImageData(const VulkanContext* pContext, const
 	// Number of channels in image
 	int channels = 0;
 
-	std::string fileLoc = "Assets//Textures//" + filename;
-
 	// Load pixel data for an image
-	unsigned char* imageData = stbi_load(fileLoc.c_str(), &m_iTextureWidth, &m_iTextureHeight, &m_iTextureChannels, STBI_rgb_alpha);
+	unsigned char* imageData = stbi_load(filename.c_str(), &m_iTextureWidth, &m_iTextureHeight, &m_iTextureChannels, STBI_rgb_alpha);
 	if (!imageData)
 	{
 		LOG_ERROR(("Failed to load a Texture file! (" + filename + ")").c_str());
@@ -96,17 +98,17 @@ bool VulkanTexture::CreateImage(const VulkanContext* pContext, const std::string
 									VK_IMAGE_TILING_OPTIMAL, 
 									VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
 									VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-									&(m_Image.image), 
-									&(m_Image.deviceMemory)));
+									&(m_pImage->image), 
+									&(m_pImage->deviceMemory)));
 
 	// Transition image to be DST for copy operation
-	pContext->TransitionImageLayout(m_Image.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	pContext->TransitionImageLayout(m_pImage->image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	// COPY DATA TO IMAGE!
-	pContext->CopyImageBuffer(imageStagingBuffer, m_Image.image, m_iTextureWidth, m_iTextureHeight);
+	pContext->CopyImageBuffer(imageStagingBuffer, m_pImage->image, m_iTextureWidth, m_iTextureHeight);
 
 	// Transition image to be Shader Readable for shader usage
-	pContext->TransitionImageLayout(m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	pContext->TransitionImageLayout(m_pImage->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Destroy staging buffers
 	vkDestroyBuffer(pContext->vkDevice, imageStagingBuffer, nullptr);
