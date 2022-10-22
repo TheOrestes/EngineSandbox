@@ -6,6 +6,7 @@
 #include "Renderables/VulkanMesh.h"
 #include "Renderables/VulkanCube.h"
 #include "Renderables/VulkanModel.h"
+#include "World/Scene.h"
 #include "Core/Core.h"
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -16,16 +17,11 @@ VulkanRenderer::VulkanRenderer()
 	m_pFrameBuffer = nullptr;
 
 	m_uiCurrentFrame = 0;
-
-	m_pCube = nullptr;
-	m_pModel = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanRenderer::~VulkanRenderer()
 {
-	SAFE_DELETE(m_pModel);
-	SAFE_DELETE(m_pCube);
 	SAFE_DELETE(m_pFrameBuffer);
 	SAFE_DELETE(m_pVulkanDevice);
 	SAFE_DELETE(m_pContext);
@@ -35,10 +31,7 @@ VulkanRenderer::~VulkanRenderer()
 void VulkanRenderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_pContext->vkDevice);
-	
-	m_pModel->Cleanup(m_pContext);
-	m_pCube->Cleanup(m_pContext);
-	
+
 	for (uint16_t i = 0; i < Helper::gMaxFramesDraws; i++)
 	{
 		vkDestroySemaphore(m_pContext->vkDevice, m_vkListSemaphoreImageAvailable[i], nullptr);
@@ -60,7 +53,7 @@ void VulkanRenderer::Cleanup()
 //---------------------------------------------------------------------------------------------------------------------
 bool VulkanRenderer::CreateVulkanDevice()
 {
-	m_pVulkanDevice = new VulkanDevice(m_pContext);
+	m_pVulkanDevice = new VulkanDevice(m_pContext); 
 	CHECK(m_pVulkanDevice->SetupDevice(m_pContext));
 
 	return true;
@@ -99,34 +92,34 @@ bool VulkanRenderer::Initialize(GLFWwindow* pWindow, VkInstance instance)
 
 	// Create surface
 	VK_CHECK(glfwCreateWindowSurface(instance, pWindow, nullptr, &(m_pContext->vkSurface)));
+}
 
+//---------------------------------------------------------------------------------------------------------------------
+bool VulkanRenderer::PreSceneLoad()
+{
 	CHECK(CreateVulkanDevice());
 	CHECK(CreateFrameBufferAttachments());
 	CHECK(CreateRenderPass());	
 	CHECK(CreateFrameBuffers());
 	CHECK(CreateCommandBuffers());
+}
 
-	// Create Cube
-
-	m_pCube = new VulkanCube();
-	CHECK(m_pCube->InitCube(m_pContext));
-
-	m_pModel = new VulkanModel();
-	m_pModel->LoadModel(m_pContext, "Robot/Steampunk.fbx");
-
-	CHECK(CreateGraphicsPipeline(Helper::FORWARD));
+//---------------------------------------------------------------------------------------------------------------------
+// Need to create scene before creating Graphics Pipeline!
+bool VulkanRenderer::PostSceneLoad(Scene* pScene)
+{
+	CHECK(CreateGraphicsPipeline(pScene, Helper::FORWARD));
 	CHECK(CreateSynchronization());
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanRenderer::Update(float dt)
+void VulkanRenderer::Update(Scene* pScene, float dt)
 {
-	m_pCube->Update(m_pContext, dt);
-	m_pModel->Update(m_pContext, dt);
+	pScene->Update(dt);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanRenderer::Render()
+void VulkanRenderer::Render(Scene* pScene)
 {
 	// -- GET NEXT IMAGE
 	// 
@@ -157,9 +150,9 @@ void VulkanRenderer::Render()
 	//	return;
 	//}
 
-	RecordCommands(imageIndex);
-	m_pCube->UpdateUniforms(m_pContext, imageIndex);
-	m_pModel->UpdateUniforms(m_pContext, imageIndex);
+	RecordCommands(pScene, imageIndex);
+
+	pScene->UpdateUniforms(m_pContext, imageIndex);
 
 	// -- SUBMIT COMMAND BUFFER TO RENDER
 	// We ask for image from the swapchain for drawing, but we need to wait till that image is available 
@@ -242,7 +235,9 @@ void VulkanRenderer::HandleWindowsResize()
 
 	m_pVulkanDevice->HandleWindowsResize(m_pContext);
 	CreateRenderPass();
-	CreateGraphicsPipeline(Helper::FORWARD);
+	
+	// TODO - Commenting for now, we need to see if we can utilise VkPipelineCache object for recreation?
+	//CreateGraphicsPipeline(Helper::FORWARD);
 
 	m_pFrameBuffer->HandleWindowResize(m_pContext);
 	
@@ -252,7 +247,7 @@ void VulkanRenderer::HandleWindowsResize()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanRenderer::RecordCommands(uint32_t currentImage)
+void VulkanRenderer::RecordCommands(Scene* pScene, uint32_t currentImage)
 {
 	// Information about how to begin each command buffer
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
@@ -284,8 +279,7 @@ void VulkanRenderer::RecordCommands(uint32_t currentImage)
 	// Bind pipeline to be used in RenderPass
 	vkCmdBindPipeline(m_pContext->vkListGraphicsCommandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pContext->vkForwardRenderingPipeline);
 	
-	//m_pCube->Render(m_pContext, currentImage);
-	m_pModel->Render(m_pContext, currentImage);
+	pScene->Render(m_pContext, currentImage);
 	
 	// End RenderPass
 	vkCmdEndRenderPass(m_pContext->vkListGraphicsCommandBuffers[currentImage]);
@@ -322,7 +316,7 @@ bool VulkanRenderer::CreateSynchronization()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
+bool VulkanRenderer::CreateGraphicsPipeline(Scene* pScene, Helper::ePipeline pipeline)
 {
 	switch (pipeline)
 	{
@@ -465,7 +459,7 @@ bool VulkanRenderer::CreateGraphicsPipeline(Helper::ePipeline pipeline)
 			colorBlendCreateInfo.pAttachments = &colorState;
 
 			// Pipeline layout (TODO: Descriptor set layouts)
-			std::array<VkDescriptorSetLayout, 1> setLayouts = { m_pModel->m_vkDescriptorSetLayout };
+			std::array<VkDescriptorSetLayout, 1> setLayouts = { pScene->GetFirstModel()->m_vkDescriptorSetLayout };
 			VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 			pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 			pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());

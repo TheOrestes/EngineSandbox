@@ -6,6 +6,8 @@
 #include "Core.h"
 
 class VulkanRenderer;
+class Scene;
+enum class CameraAction;
 
 class VulkanApplication : public IApplication
 {
@@ -29,11 +31,17 @@ private:
 	bool						RunShaderCompiler(const std::string& directoryPath);
 	void						PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
+public:
+	void						HandleWindowResizedCallback(GLFWwindow* pWindow);
+	void						HandleWindowsClosedCallback(GLFWwindow* pWindow);
+	void						HandleSceneInput(GLFWwindow* pWindow, CameraAction direction, float mousePosX = 0.0f, float mousePosY = 0.0f, bool isMouseClicked = false);
+
 private:
 	GLFWwindow*					m_pWindow;
 	VkInstance					m_vkInstance;
 	VulkanRenderer*				m_pVulkanRenderer;	
 	VkDebugUtilsMessengerEXT	m_vkDebugMessenger;
+	Scene*						m_pScene;
 
 	//-----------------------------------------------------------------------------------------------------------------
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT msgSeverity,

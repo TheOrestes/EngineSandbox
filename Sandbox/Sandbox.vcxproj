@@ -11,6 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\World\Camera.h" />
+    <ClInclude Include="source\World\Scene.h" />
     <ClInclude Include="source\Core\IApplication.h" />
     <ClInclude Include="source\Core\Logger.h" />
     <ClInclude Include="source\Core\SandboxEngine.h" />
@@ -32,6 +34,8 @@
     <ClInclude Include="source\Renderables\VulkanModel.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="source\World\Camera.cpp" />
+    <ClCompile Include="source\World\Scene.cpp" />
     <ClCompile Include="source\Core\Logger.cpp" />
     <ClCompile Include="source\Core\SandboxEngine.cpp" />
     <ClCompile Include="source\Main.cpp" />

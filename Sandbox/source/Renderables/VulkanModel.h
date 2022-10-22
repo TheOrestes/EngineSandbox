@@ -9,6 +9,7 @@
 class VulkanContext;
 class VulkanMaterial;
 class VulkanMesh;
+class Camera;
 
 //---------------------------------------------------------------------------------------------------------------------
 struct UniformData
@@ -64,7 +65,7 @@ public:
 	void								LoadModel(const VulkanContext* pContext, const std::string& filePath);
 	bool								SetupDescriptors(const VulkanContext* pContext);
 	void								Render(const VulkanContext* pContext, uint32_t index);
-	void								Update(const VulkanContext* pContext, float dt);
+	void								Update(const Camera* pCamera, float dt);
 	void								UpdateUniforms(const VulkanContext* pContext, uint32_t imageIndex);
 	void								Cleanup(VulkanContext* pContext);
 	void								CleanupOnWindowsResize(VulkanContext* pContext);
@@ -97,5 +98,7 @@ public:
 	glm::vec3							m_vecRotationAxis;
 	glm::vec3							m_vecScale;
 	float								m_fRotation;
+	bool								m_bUpdate;
+	float								m_fCurrentAngle;
 };
 

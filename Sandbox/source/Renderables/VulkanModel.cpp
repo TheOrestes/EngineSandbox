@@ -4,6 +4,8 @@
 #include "Renderer/VulkanContext.h"
 #include "Renderer/VulkanMaterial.h"
 #include "VulkanMesh.h"
+#include "World/Camera.h"
+#include "Core/Core.h"
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanModel::VulkanModel()
@@ -20,8 +22,10 @@ VulkanModel::VulkanModel()
 	m_strModelName.clear();
 	m_vecPosition = glm::vec3(0);
 	m_vecRotationAxis = glm::vec3(0, 1, 0);
-	m_vecScale = glm::vec3(0.1f);
+	m_vecScale = glm::vec3(1.0f);
 	m_fRotation = 0.0f;
+	m_bUpdate = false;
+	m_fCurrentAngle = 0.0f;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -327,22 +331,26 @@ void VulkanModel::Render(const VulkanContext* pContext, uint32_t index)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void VulkanModel::Update(const VulkanContext* pContext, float dt)
+void VulkanModel::Update(const Camera* pCamera, float dt)
 {
-	static float fCurrentAngle = 0.0f;
-	fCurrentAngle += dt * 0.05f;
-	if (fCurrentAngle > 360.0f) { fCurrentAngle = 0.0f; }
+	if (m_bUpdate)
+	{
+		m_fCurrentAngle += dt * 0.05f;
+		if (m_fCurrentAngle > 360.0f) { m_fCurrentAngle = 0.0f; }
+	}
+
+	m_fRotation = m_fCurrentAngle;
 
 	m_pShaderDataBuffer->shaderData.matWorld = glm::mat4(1);
 	m_pShaderDataBuffer->shaderData.matWorld = glm::translate(m_pShaderDataBuffer->shaderData.matWorld, m_vecPosition);
-	m_pShaderDataBuffer->shaderData.matWorld = glm::rotate(m_pShaderDataBuffer->shaderData.matWorld, fCurrentAngle, m_vecRotationAxis);
+	m_pShaderDataBuffer->shaderData.matWorld = glm::rotate(m_pShaderDataBuffer->shaderData.matWorld, m_fRotation, m_vecRotationAxis);
 	m_pShaderDataBuffer->shaderData.matWorld = glm::scale(m_pShaderDataBuffer->shaderData.matWorld, m_vecScale);
 
-	float aspect = (float)pContext->vkSwapchainExtent.width / (float)pContext->vkSwapchainExtent.height;
-	m_pShaderDataBuffer->shaderData.matProjection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 1000.0f);
+	float aspect = (float)gWindowWidht/ (float)gWindowHeight;
+	m_pShaderDataBuffer->shaderData.matProjection = pCamera->m_matProjection;// glm::perspective(glm::radians(45.0f), aspect, 0.1f, 1000.0f);
 	m_pShaderDataBuffer->shaderData.matProjection[1][1] *= -1.0f;
 
-	m_pShaderDataBuffer->shaderData.matView = glm::lookAt(glm::vec3(0.0f, 2.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	m_pShaderDataBuffer->shaderData.matView = pCamera->m_matView;// glm::lookAt(glm::vec3(0.0f, 2.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 //---------------------------------------------------------------------------------------------------------------------

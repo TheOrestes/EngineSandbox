@@ -33,7 +33,7 @@ layout(set = 0, binding = 1) uniform sampler2D samplerAlbedoTexture;
 //---------------------------------------------------------------------------------------------------------------------
 void main()
 {
-    vec4 albedoColor = vec4(0.0f);
+    vec4 albedoColor = vec4(1.0f);
 
     //--- Albedo Color
     if(shaderData.hasTextureAEN.r == 1)

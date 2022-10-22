@@ -12,6 +12,7 @@ class VulkanDevice;
 class VulkanFrameBuffer;
 class VulkanCube;
 class VulkanModel;
+class Scene;
 
 //---------------------------------------------------------------------------------------------------------------------
 class VulkanRenderer : public IRenderer
@@ -21,20 +22,24 @@ public:
 	~VulkanRenderer();
 
 	bool								Initialize(GLFWwindow* pWindow, VkInstance instance);
-	void								Update(float dt);
-	void								Render();
+	bool								PreSceneLoad();
+	bool								PostSceneLoad(Scene* pScene);
+	void								Update(Scene* pScene, float dt);
+	void								Render(Scene* pScene);
 	void								HandleWindowsResize();
-	void								RecordCommands(uint32_t currentImage);
+	void								RecordCommands(Scene* pScene, uint32_t currentImage);
 	bool								CreateSynchronization();
 	void								Cleanup();
 	void								CleanupOnWindowsResize();
+
+	inline	VulkanContext*				GetVulkanContext() const { return m_pContext; }
 
 private:
 	bool								CreateVulkanDevice();
 	bool								CreateFrameBufferAttachments();
 	bool								CreateFrameBuffers();
 	bool								CreateCommandBuffers();
-	bool								CreateGraphicsPipeline(Helper::ePipeline pipeline);
+	bool								CreateGraphicsPipeline(Scene* pScene, Helper::ePipeline pipeline);
 	bool								CreateRenderPass();
 
 private:
@@ -49,6 +54,5 @@ private:
 	std::vector<VkFence>				m_vkListFences;
 
 	VulkanCube*							m_pCube;
-	VulkanModel*						m_pModel;
 };
 

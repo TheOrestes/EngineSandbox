@@ -2,6 +2,8 @@
 #include "VulkanApplication.h"
 #include "Renderer/VulkanRenderer.h"
 #include "Renderer/Utility.h"
+#include "World/Scene.h"
+#include "World/Camera.h"
 #include "GLFW/glfw3.h"
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -10,11 +12,13 @@ VulkanApplication::VulkanApplication()
 	m_vkDebugMessenger = VK_NULL_HANDLE;
 	m_vkInstance = VK_NULL_HANDLE;
 	m_pVulkanRenderer = nullptr;
+	m_pScene = nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 VulkanApplication::~VulkanApplication()
 {
+	SAFE_DELETE(m_pScene);
 	SAFE_DELETE(m_pVulkanRenderer);
 }
 
@@ -28,7 +32,14 @@ bool VulkanApplication::Initialize(void* pWindow)
 	CHECK(RunShaderCompiler("Assets/Shaders"));
 
 	m_pVulkanRenderer = new VulkanRenderer();
-	CHECK(m_pVulkanRenderer->Initialize(m_pWindow, m_vkInstance));
+	m_pVulkanRenderer->Initialize(m_pWindow, m_vkInstance);
+
+	CHECK(m_pVulkanRenderer->PreSceneLoad());
+
+	m_pScene = new Scene();
+	CHECK(m_pScene->LoadScene(m_pVulkanRenderer->GetVulkanContext()));
+
+	CHECK(m_pVulkanRenderer->PostSceneLoad(m_pScene));
 
 	return true;
 }
@@ -36,18 +47,20 @@ bool VulkanApplication::Initialize(void* pWindow)
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanApplication::Update(float dt)
 {
-	m_pVulkanRenderer->Update(dt);
+	m_pVulkanRenderer->Update(m_pScene, dt);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanApplication::Render()
 {
-	m_pVulkanRenderer->Render();
+	m_pVulkanRenderer->Render(m_pScene);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanApplication::Cleanup()
 {
+	m_pScene->Cleanup(m_pVulkanRenderer->GetVulkanContext());
+
 	m_pVulkanRenderer->Cleanup();
 
 	if (Helper::g_bEnableValidationLayer)
@@ -184,6 +197,56 @@ void VulkanApplication::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCr
 	createInfo.pfnUserCallback = DebugCallback;
 	createInfo.pUserData = nullptr;
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void VulkanApplication::HandleWindowResizedCallback(GLFWwindow* pWindow)
+{
+
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void VulkanApplication::HandleWindowsClosedCallback(GLFWwindow* pWindow)
+{
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void VulkanApplication::HandleSceneInput(GLFWwindow* pWindow, CameraAction direction, float mousePosX, float mousePosY, bool isMouseClicked)
+{
+	switch (direction)
+	{
+	case CameraAction::CAMERA_BACK:
+	case CameraAction::CAMERA_DOWN:
+	case CameraAction::CAMERA_FORWARD:
+	case CameraAction::CAMERA_LEFT:
+	case CameraAction::CAMERA_RIGHT:
+	case CameraAction::CAMERA_UP:
+	{
+		m_pScene->GetCamera()->Move(direction);
+		break;
+	}
+
+	case CameraAction::CAMERA_NONE:
+	{
+		m_pScene->GetCamera()->Stop();
+		break;
+	}
+
+	case CameraAction::CAMERA_PAN_2D:
+	{
+		m_pScene->GetCamera()->Move2D(glm::vec2(mousePosX, mousePosY), isMouseClicked);
+		break;
+	}
+
+	case CameraAction::CAMERA_CLICK:
+	{
+		break;
+	}
+		
+	default:
+		break;
+	}
+	
 }
 
 //---------------------------------------------------------------------------------------------------------------------
