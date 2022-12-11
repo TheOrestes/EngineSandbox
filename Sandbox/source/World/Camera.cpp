@@ -15,8 +15,8 @@ Camera::Camera()
     m_fMaxPitchRate = 0.5f;
     m_fMaxYawRate = 0.5f;
 
-    m_vecCameraPosition = glm::vec3(0,2,-3);
-    m_vecCameraLookAt = glm::vec3(0,0,1);
+    m_vecCameraPosition = glm::vec3(0,0,3);
+    m_vecCameraLookAt = glm::vec3(0,0,0);
 
     m_bPrevInitialized = false;
     m_vecPrevMousePos = glm::vec2(0);

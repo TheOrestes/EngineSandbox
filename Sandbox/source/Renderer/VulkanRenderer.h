@@ -52,7 +52,5 @@ private:
 	std::vector<VkSemaphore>			m_vkListSemaphoreImageAvailable;
 	std::vector<VkSemaphore>			m_vkListSemaphoreRenderFinished;
 	std::vector<VkFence>				m_vkListFences;
-
-	VulkanCube*							m_pCube;
 };
 

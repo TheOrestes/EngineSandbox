@@ -27,7 +27,7 @@ bool SandboxEngine::Initialize(GLFWwindow* window)
 
 	m_pVulkanApp = new VulkanApplication();
 
-	int returnCode = m_pVulkanApp->Initialize(reinterpret_cast<void*>(m_pWindow));
+	CHECK(m_pVulkanApp->Initialize(reinterpret_cast<void*>(m_pWindow)));
 
 	glfwSetWindowUserPointer(m_pWindow, m_pVulkanApp);
 
@@ -39,7 +39,7 @@ bool SandboxEngine::Initialize(GLFWwindow* window)
 	glfwSetMouseButtonCallback(m_pWindow, MouseButtonCallback);
 	glfwSetScrollCallback(m_pWindow, MouseScrollCallback);
 
-	return returnCode;
+	return true;
 }   
 
 //---------------------------------------------------------------------------------------------------------------------
