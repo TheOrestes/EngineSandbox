@@ -10,3 +10,6 @@
 [submodule "Sandbox/ThirdParty/assimp"]
 	path = Sandbox/ThirdParty/assimp
 	url = https://github.com/assimp/assimp.git
+[submodule "Sandbox/ThirdParty/imgui"]
+	path = Sandbox/ThirdParty/imgui
+	url = https://github.com/ocornut/imgui.git

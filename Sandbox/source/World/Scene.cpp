@@ -3,6 +3,7 @@
 
 #include "Renderer/VulkanContext.h"
 #include "Renderables/VulkanModel.h"
+#include "UI/UIManager.h"
 #include "Camera.h"
 #include "Core/Core.h"
 
@@ -10,6 +11,7 @@
 Scene::Scene()
 {
 	m_pCamera = nullptr;
+	m_pGUI = nullptr;
 	m_ListModels.clear();
 }
 
@@ -17,6 +19,7 @@ Scene::Scene()
 Scene::~Scene()
 {
 	SAFE_DELETE(m_pCamera);
+	SAFE_DELETE(m_pGUI);
 	m_ListModels.clear();
 }
 
@@ -24,8 +27,10 @@ Scene::~Scene()
 bool Scene::LoadScene(const VulkanContext* pContext)
 {
 	m_pCamera = new Camera();
-
 	CHECK(LoadModels(pContext));
+
+	m_pGUI = new UIManager();
+	CHECK(m_pGUI->Initialize(pContext));
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
@@ -73,6 +78,10 @@ void Scene::Render(const VulkanContext* pContext, uint32_t imageIndex)
 			model->Render(pContext, imageIndex);
 		}
 	}
+
+	m_pGUI->BeginRender(pContext);
+	m_pGUI->Render(pContext);
+	m_pGUI->EndRender(pContext, imageIndex);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------

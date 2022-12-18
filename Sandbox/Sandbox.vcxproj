@@ -11,6 +11,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\UI\imconfig.h" />
+    <ClInclude Include="source\UI\imgui.h" />
+    <ClInclude Include="source\UI\imgui_impl_glfw.h" />
+    <ClInclude Include="source\UI\imgui_impl_vulkan.h" />
+    <ClInclude Include="source\UI\imgui_internal.h" />
+    <ClInclude Include="source\UI\imstb_rectpack.h" />
+    <ClInclude Include="source\UI\imstb_textedit.h" />
+    <ClInclude Include="source\UI\imstb_truetype.h" />
     <ClInclude Include="source\World\Camera.h" />
     <ClInclude Include="source\World\Scene.h" />
     <ClInclude Include="source\Core\IApplication.h" />
@@ -32,8 +40,22 @@
     <ClInclude Include="source\Renderer\VulkanMaterial.h" />
     <ClInclude Include="source\Renderer\VulkanTexture.h" />
     <ClInclude Include="source\Renderables\VulkanModel.h" />
+    <ClInclude Include="ThirdParty\imgui\imconfig.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui_internal.h" />
+    <ClInclude Include="ThirdParty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="ThirdParty\imgui\imstb_textedit.h" />
+    <ClInclude Include="ThirdParty\imgui\imstb_truetype.h" />
+    <ClInclude Include="source\UI\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="source\UI\imgui.cpp" />
+    <ClCompile Include="source\UI\imgui_demo.cpp" />
+    <ClCompile Include="source\UI\imgui_draw.cpp" />
+    <ClCompile Include="source\UI\imgui_impl_glfw.cpp" />
+    <ClCompile Include="source\UI\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="source\UI\imgui_tables.cpp" />
+    <ClCompile Include="source\UI\imgui_widgets.cpp" />
     <ClCompile Include="source\World\Camera.cpp" />
     <ClCompile Include="source\World\Scene.cpp" />
     <ClCompile Include="source\Core\Logger.cpp" />
@@ -53,6 +75,12 @@
     <ClCompile Include="source\Renderer\VulkanMaterial.cpp" />
     <ClCompile Include="source\Renderer\VulkanTexture.cpp" />
     <ClCompile Include="source\Renderables\VulkanModel.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="source\UI\UIManager.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

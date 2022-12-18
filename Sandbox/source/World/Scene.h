@@ -3,6 +3,7 @@
 class VulkanContext;
 class VulkanModel;
 class Camera;
+class UIManager;
 
 //---------------------------------------------------------------------------------------------------------------------
 class Scene
@@ -28,5 +29,6 @@ private:
 private:
 	std::vector <VulkanModel*>		m_ListModels;
 	Camera*							m_pCamera;
+	UIManager*						m_pGUI;
 };
 
