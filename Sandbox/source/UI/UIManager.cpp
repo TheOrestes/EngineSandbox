@@ -51,10 +51,16 @@ bool UIManager::Initialize(const VulkanContext* pContext)
 
 	// Initialize imgui library
 	IMGUI_CHECKVERSION();
-	//ImGuiIO& io = ImGui::GetIO();
+	ImGui::CreateContext();
+
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
 	//io.Fonts->AddFontFromFileTTF("Fonts/SFMono-Regular.otf", 13.0f);
 
-	ImGui::CreateContext();
+	// setup ImGui style
+	ImGui::StyleColorsDark();
+	
 	CHECK(ImGui_ImplGlfw_InitForVulkan(pContext->pWindow, true));
 
 	// this initializes imgui for vulkan

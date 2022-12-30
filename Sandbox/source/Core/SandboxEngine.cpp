@@ -4,6 +4,9 @@
 #include "VulkanApplication.h"
 #include "World/Camera.h"
 
+#include "World/Scene.h"
+#include "UI/UIManager.h"
+
 //---------------------------------------------------------------------------------------------------------------------
 SandboxEngine::SandboxEngine()
 {
@@ -25,12 +28,6 @@ bool SandboxEngine::Initialize(GLFWwindow* window)
 {
 	m_pWindow = window;
 
-	m_pVulkanApp = new VulkanApplication();
-
-	CHECK(m_pVulkanApp->Initialize(reinterpret_cast<void*>(m_pWindow)));
-
-	glfwSetWindowUserPointer(m_pWindow, m_pVulkanApp);
-
 	// Register Events!
 	glfwSetWindowCloseCallback(m_pWindow, WindowClosedCallback);
 	glfwSetWindowSizeCallback(m_pWindow, WindowResizedCallback);
@@ -38,6 +35,11 @@ bool SandboxEngine::Initialize(GLFWwindow* window)
 	glfwSetCursorPosCallback(m_pWindow, MousePositionCallback);
 	glfwSetMouseButtonCallback(m_pWindow, MouseButtonCallback);
 	glfwSetScrollCallback(m_pWindow, MouseScrollCallback);
+
+	m_pVulkanApp = new VulkanApplication();
+	CHECK(m_pVulkanApp->Initialize(reinterpret_cast<void*>(m_pWindow)));
+
+	glfwSetWindowUserPointer(m_pWindow, m_pVulkanApp);
 
 	return true;
 }   
@@ -66,7 +68,7 @@ void SandboxEngine::WindowResizedCallback(GLFWwindow* pWindow, int width, int he
 {
 	VulkanApplication* pApp = static_cast<VulkanApplication*>(glfwGetWindowUserPointer(pWindow));
 	pApp->HandleWindowResizedCallback(pWindow);
-
+	
 	//m_pVulkanApp->HandleWindowResizedCallback(pWindow, width, height);
 	LOG_DEBUG("Window Resized to [{0}, {1}]", width, height);
 }

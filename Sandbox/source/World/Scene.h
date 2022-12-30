@@ -29,6 +29,7 @@ private:
 private:
 	std::vector <VulkanModel*>		m_ListModels;
 	Camera*							m_pCamera;
+public:
 	UIManager*						m_pGUI;
 };
 

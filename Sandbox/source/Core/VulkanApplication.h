@@ -36,12 +36,14 @@ public:
 	void						HandleWindowsClosedCallback(GLFWwindow* pWindow);
 	void						HandleSceneInput(GLFWwindow* pWindow, CameraAction direction, float mousePosX = 0.0f, float mousePosY = 0.0f, bool isMouseClicked = false);
 
+	Scene*						m_pScene;
+
 private:
 	GLFWwindow*					m_pWindow;
 	VkInstance					m_vkInstance;
 	VulkanRenderer*				m_pVulkanRenderer;	
 	VkDebugUtilsMessengerEXT	m_vkDebugMessenger;
-	Scene*						m_pScene;
+
 
 	//-----------------------------------------------------------------------------------------------------------------
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT msgSeverity,

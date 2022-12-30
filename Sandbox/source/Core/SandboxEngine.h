@@ -10,7 +10,7 @@ class SandboxEngine
 public:
 	SandboxEngine();
 	virtual ~SandboxEngine();
-	
+
 	bool Initialize(GLFWwindow* window);
 	void Run(float dt);
 
