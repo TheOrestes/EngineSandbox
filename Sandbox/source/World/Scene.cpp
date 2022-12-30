@@ -95,7 +95,6 @@ bool Scene::LoadModels(const VulkanContext* pContext)
 	pRobotModel->m_bUpdate = true;
 	pRobotModel->SetupDescriptors(pContext);
 	
-
 	m_ListModels.push_back(pRobotModel);
 
 	// Load Robot Model

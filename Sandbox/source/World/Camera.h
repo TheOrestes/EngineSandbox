@@ -57,7 +57,6 @@ public:
 
     float           m_fMaxPitchRate;
     float           m_fMaxYawRate;
-    bool            m_bMoveCamera;
 
     glm::vec3       m_vecCameraPosition;
     glm::vec3       m_vecCameraPositionDelta;

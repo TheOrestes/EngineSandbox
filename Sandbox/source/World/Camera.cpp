@@ -5,18 +5,35 @@
 //---------------------------------------------------------------------------------------------------------------------
 Camera::Camera()
 {
-    m_vecCameraUp = glm::vec3(0,1,0);
-    m_fFOV = 45.0f;
-    m_fAspect = (float)gWindowWidht / (float)gWindowHeight;
+    m_iViewportX = 0;
+    m_iViewportY = 0;
+
+    m_iWindowWidth = 0;
+    m_iWindowHeight = 0;
+
+    m_fAspect   = (float)gWindowWidht / (float)gWindowHeight;
+    m_fFOV      = 45.0f;
     m_fNearClip = 0.01f;
     m_fFarClip = 10000.0f;
-    m_vecCameraPositionDelta = glm::vec3(0);
+
     m_fCameraScale = 0.01f;
+    m_fCameraYaw = 0.0f;
+    m_fCameraPitch = 0.0f;
+
     m_fMaxPitchRate = 0.5f;
     m_fMaxYawRate = 0.5f;
 
-    m_vecCameraPosition = glm::vec3(0,0,3);
-    m_vecCameraLookAt = glm::vec3(0,0,0);
+    m_vecCameraPosition = glm::vec3(0, 2, 3);
+    m_vecCameraPositionDelta = glm::vec3(0);
+    m_vecCameraLookAt = glm::vec3(0, 1, 0);
+
+    m_vecCameraDirection = glm::vec3(1);
+    m_vecCameraUp = glm::vec3(0,1,0);
+
+    m_matProjection = glm::mat4(1);
+    m_matView = glm::mat4(1);
+    m_matModel = glm::mat4(1);
+    m_matMVP = glm::mat4(1);
 
     m_bPrevInitialized = false;
     m_vecPrevMousePos = glm::vec2(0);
@@ -69,7 +86,7 @@ void Camera::Update(float dt)
 
     // Compute MVP
     m_matView = glm::lookAt(m_vecCameraPosition, m_vecCameraLookAt, m_vecCameraUp);
-    m_matModel = glm::mat4(1);
+     m_matModel = glm::mat4(1);
     m_matMVP = m_matProjection * m_matView * m_matModel;
 }
 
