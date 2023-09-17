@@ -131,7 +131,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CONSOLE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.204.1\Include;$(SolutionDir)Sandbox\source;$(SolutionDir)Sandbox\ThirdParty\spdlog\include;$(SolutionDir)Sandbox\ThirdParty\glfw\include;$(SolutionDir)Sandbox\ThirdParty\glm;$(SolutionDir)Sandbox\ThirdParty\stb;$(SolutionDir)Sandbox\ThirdParty\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)Sandbox\source;$(SolutionDir)Sandbox\ThirdParty\spdlog\include;$(SolutionDir)Sandbox\ThirdParty\glfw\include;$(SolutionDir)Sandbox\ThirdParty\glm;$(SolutionDir)Sandbox\ThirdParty\stb;$(SolutionDir)Sandbox\ThirdParty\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>sandboxPCH.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -139,7 +139,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.204.1\Lib;$(SolutionDir)Sandbox\ThirdParty\glfw\bin\src\Debug;$(SolutionDir)Sandbox\ThirdParty\assimp\bin\lib\Debug;$(SolutionDir)Sandbox\ThirdParty\assimp\bin\contrib\zlib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;$(SolutionDir)Sandbox\ThirdParty\glfw\bin\src\Debug;$(SolutionDir)Sandbox\ThirdParty\assimp\bin\lib\Debug;$(SolutionDir)Sandbox\ThirdParty\assimp\bin\contrib\zlib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mtd.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>

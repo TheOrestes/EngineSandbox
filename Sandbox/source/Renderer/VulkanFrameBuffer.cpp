@@ -34,6 +34,8 @@ void VulkanFrameBuffer::Cleanup(VulkanContext* pContext)
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanFrameBuffer::CleanupOnWindowsResize(VulkanContext* pContext)
 {
+	vkDestroyImageView(pContext->vkDevice, m_depthAttachment.imageView, nullptr);
+	
 	for (uint32_t i = 0; i < m_ListAttachments.size(); i++)
 	{
 		vkDestroyFramebuffer(pContext->vkDevice, pContext->vkListFramebuffers[i], nullptr);
@@ -45,8 +47,7 @@ void VulkanFrameBuffer::CleanupOnWindowsResize(VulkanContext* pContext)
 
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanFrameBuffer::HandleWindowResize(VulkanContext* pContext)
-{
-	uint32_t swapchainImageCount;
+{	uint32_t swapchainImageCount;
 	vkGetSwapchainImagesKHR(pContext->vkDevice, pContext->vkSwapchain, &swapchainImageCount, nullptr);
 
 	std::vector<VkImage> images(swapchainImageCount);

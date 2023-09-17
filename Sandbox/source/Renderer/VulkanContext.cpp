@@ -46,6 +46,17 @@ VulkanContext::~VulkanContext()
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
+void VulkanContext::CleanupOnWindowsResize()
+{
+	vkDestroyPipeline(vkDevice, vkForwardRenderingPipeline, nullptr);
+	vkDestroyPipelineLayout(vkDevice, vkForwardRenderingPipelineLayout, nullptr);
+	vkDestroyRenderPass(vkDevice, vkForwardRenderingRenderPass, nullptr);
+
+	vkFreeCommandBuffers(vkDevice, vkGraphicsCommandPool, static_cast<uint32_t>(vkListGraphicsCommandBuffers.size()), vkListGraphicsCommandBuffers.data());
+	vkDestroySwapchainKHR(vkDevice, vkSwapchain, nullptr);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------
 VkFormat VulkanContext::ChooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags featureFlags) const
 {
 	for (VkFormat format : formats)

@@ -264,7 +264,7 @@ void VulkanDevice::FetchQueueFamilies(VkPhysicalDevice physicalDevice, const Vul
 	}
 }
 
-//---------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
 bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
 {
 	// Get count of total number of extensions

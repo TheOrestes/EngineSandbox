@@ -89,7 +89,7 @@ bool Scene::LoadModels(const VulkanContext* pContext)
 {
 	// Load Robot Model
 	VulkanModel* pRobotModel = new VulkanModel();
-	pRobotModel->LoadModel(pContext, "Gizmo/Gizmo.fbx");
+	pRobotModel->LoadModel(pContext, "Torus/Torus.fbx");
 	pRobotModel->m_vecPosition = glm::vec3(0, 0, 0);
 	pRobotModel->m_vecScale = glm::vec3(0.1f);
 	pRobotModel->m_bUpdate = true;
@@ -99,7 +99,7 @@ bool Scene::LoadModels(const VulkanContext* pContext)
 
 	// Load Robot Model
 	VulkanModel* pBarbModel = new VulkanModel();
-	pBarbModel->LoadModel(pContext, "Barbarian/BarbNew.fbx");
+	pBarbModel->LoadModel(pContext, "Barbarian/BarbNew2.fbx");
 	pBarbModel->m_vecPosition = glm::vec3(0, 0, 0);
 	pBarbModel->m_vecScale = glm::vec3(0.1f);
 	pBarbModel->m_bUpdate = false;

@@ -17,8 +17,7 @@ int main(int argc, char** argv)
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	GLFWwindow* window = glfwCreateWindow(gWindowWidht, gWindowHeight, "Vulkan Sandbox", nullptr, nullptr);
-
-	if (!window)
+		if (!window)
 	{
 		glfwTerminate();
 		LOG_ERROR("Window creation failed!");

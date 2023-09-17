@@ -139,16 +139,16 @@ void VulkanRenderer::Render(Scene* pScene)
 
 	// if swap chain is out of date while acquiring the image, then its not possible to present it!
 	// We should recreate the swap chain & try again in the next draw call...
-	//if (result == VK_ERROR_OUT_OF_DATE_KHR)
-	//{
-	//	HandleWindowsResize();
-	//	return;
-	//}
-	//else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-	//{
-	//	LOG_ERROR("Failed to acquire swapchain image!");
-	//	return;
-	//}
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		HandleWindowsResize();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		LOG_ERROR("Failed to acquire swapchain image!");
+		return;
+	}
 
 	RecordCommands(pScene, imageIndex);
 
@@ -204,10 +204,7 @@ void VulkanRenderer::Render(Scene* pScene)
 //---------------------------------------------------------------------------------------------------------------------
 void VulkanRenderer::CleanupOnWindowsResize()
 {
-	vkDestroyPipeline(m_pContext->vkDevice, m_pContext->vkForwardRenderingPipeline, nullptr);
-	vkDestroyPipelineLayout(m_pContext->vkDevice, m_pContext->vkForwardRenderingPipelineLayout, nullptr);
-
-	vkDestroyRenderPass(m_pContext->vkDevice, m_pContext->vkForwardRenderingRenderPass, nullptr);
+	m_pContext->CleanupOnWindowsResize();
 
 	m_pFrameBuffer->CleanupOnWindowsResize(m_pContext);
 	m_pVulkanDevice->CleanupOnWindowsResize(m_pContext);

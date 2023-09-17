@@ -5,13 +5,21 @@
 #include "Utility.h"
 #include "GLFW/glfw3.h"
 
+//---------------------------------------------------------------------------------------------------------------------
+enum class ERenderer
+{
+	RASTERIZER = 0,
+	SOFTWARE_RT,
+	HARDWARE_RT
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 class VulkanContext
 {
 public:
 	VulkanContext();
 	~VulkanContext();
 
-	void								HandleWindowsResize();
 	void								Cleanup();
 	void								CleanupOnWindowsResize();
 
@@ -34,6 +42,8 @@ public:
 	bool								EndAndSubmitCommandBuffer(VkCommandBuffer commandBuffer) const;
 
 public:
+	ERenderer							eRendererMode;
+
 	VkInstance							vkInst;
 	GLFWwindow*							pWindow;
 	VkSurfaceKHR						vkSurface;

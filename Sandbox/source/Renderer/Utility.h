@@ -9,7 +9,7 @@
 
 namespace Helper
 {
-	const std::string gShaderCompilerPath = "C:/VulkanSDK/1.3.204.1/Bin/glslc.exe";
+	const std::string gShaderCompilerPath = "C:/VulkanSDK/1.3.250.1/Bin/glslc.exe";
 	const uint16_t gWindowWidht = 960;
 	const uint16_t gWindowHeight = 540;
 	const uint16_t gMaxFramesDraws = 2;
@@ -36,6 +36,7 @@ namespace Helper
 	//--- list of device extensions
 	const std::vector<const char*> g_strDeviceExtensions =
 	{
+		
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
